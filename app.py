@@ -224,8 +224,6 @@ def process(df_raw: pd.DataFrame):
         issue(report, 'Weight column not found. BMI-related variables will be blank.')
 # ---------- Height / Weight (robust logic) ----------
 
-height_in = pd.Series([pd.NA]*len(df), index=df.index)
-weight_lb = pd.Series([pd.NA]*len(df), index=df.index)
 
 # 1. Try original Qualtrics (Q209/Q210 from label detection)
 if 'Q209' in df.columns and 'Q210' in df.columns:
