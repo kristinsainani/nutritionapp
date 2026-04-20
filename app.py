@@ -139,8 +139,7 @@ def ensure_columns(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
 def process_nutrition_data(raw_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, List[str], pd.DataFrame]:
     warnings: List[str] = []
 
-    df = normalize_columns(raw_df)
-    df = drop_qualtrics_metadata_rows(df)
+    df = raw_df.copy()
 
 
     aliases = {
