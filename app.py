@@ -140,6 +140,7 @@ def process_nutrition_data(raw_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataF
     warnings: List[str] = []
 
     df = raw_df.copy()
+    out = df.copy()
 
 
     aliases = {
