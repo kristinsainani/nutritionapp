@@ -610,7 +610,7 @@ if miss_hw.any():
             redcap[c] = pd.NA
             issue(report, f'{c} not created: left blank in REDCap output.')
 
-    return processed, redcap, report
+
 
 
 def make_workbook(full_df, redcap_df, report):
