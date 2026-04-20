@@ -129,10 +129,15 @@ def load_input_file(uploaded_file) -> pd.DataFrame:
         raise ValueError("Please upload a CSV or Excel file.")
 
     # ADD THIS LINE — makes missing columns behave like 0
-    global get
-    get = lambda c: df[c].fillna(0) if c in df.columns else 0
+# Ensure all expected columns exist
+for col in FOOD_COUNT_VARS:
+    if col not in df.columns:
+        df[col] = 0
 
-    return df
+# Clean values so math never breaks
+df[FOOD_COUNT_VARS] = df[FOOD_COUNT_VARS].apply(
+    pd.to_numeric, errors='coerce'
+).fillna(0)
 
 
 def process_nutrition_data(raw_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, List[str], pd.DataFrame]:
