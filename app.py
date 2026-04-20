@@ -419,6 +419,9 @@ def process_nutrition_data(raw_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataF
     out["aasupp"] = contains_flag(q166, "acids")
     out["herbotsupp"] = contains_flag(q166, "botanicals")
 
+food_cols = [...]  # all food intake variables
+df[food_cols] = df[food_cols].fillna(0)
+    
     o = out
     o["fruitkcal"] = (o["fruits"] * 60) + (o["driedfruit"] * 60) + (o["fruitjuice"] * 120 / 7)
     o["fruitcho"] = (o["fruits"] * 15) + (o["driedfruit"] * 15) + (o["fruitjuice"] * 30 / 7)
