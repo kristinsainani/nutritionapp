@@ -268,7 +268,7 @@ def process_nutrition_data(raw_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataF
         hsrc = "Q209"
     elif "height_in" in out.columns and out["height_in"].notna().any():
         hsrc = "height_in"
-        warnings.append("Q209 was missing, so height_in was used instead.")
+        warnings.append("Q209 (height) was missing. Please add a column for height in inches labeled Q209.")
     else:
         hsrc = None
         warnings.append("Missing Q209/height_in. Height-based outputs such as heightm, BMI, FFM, EA, and related variables could not be fully calculated.")
@@ -277,7 +277,7 @@ def process_nutrition_data(raw_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataF
         wsrc = "Q210"
     elif "weight_kg" in out.columns and out["weight_kg"].notna().any():
         wsrc = "weight_kg"
-        warnings.append("Q210 was missing, so weight_kg was used instead.")
+        warnings.append("Q210 (weight) was missing. Please add a column for weight in lbs labeled Q10.")
     else:
         wsrc = None
         warnings.append("Missing Q210/weight_kg. Weight-based outputs such as weightkg, BMI, FFM, EEE, EA, and related variables could not be fully calculated.")
