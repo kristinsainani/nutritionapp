@@ -50,40 +50,8 @@ HOUR_WORDS = {
 HOUR_PATTERNS = sorted(HOUR_WORDS.items(), key=lambda kv: len(kv[0]), reverse=True)
 
 
-def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-
-    rename_map = {}
-    for col in df.columns:
-        if col.endswith(".1"):
-            rename_map[col] = f"{col[:-2]}_0001"
-    if rename_map:
-        df = df.rename(columns=rename_map)
-
-    for base in ["Q156", "Q157", "Q158", "Q160", "Q161", "Q162"]:
-        if f"{base}_0001" not in df.columns and base in df.columns:
-            df[f"{base}_0001"] = df[base]
-
-    if "Q165_0001" not in df.columns and "Q165.1" in df.columns:
-        df["Q165_0001"] = df["Q165.1"]
-
-    return df
-
-
-def drop_qualtrics_metadata_rows(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-
-    bad = pd.Series(False, index=df.index)
-    if "Q182" in df.columns:
-        q182 = df["Q182"].astype(str)
-        bad = bad | q182.str.contains("study ID|ImportId|Q182", case=False, na=False)
-
-    if "Q200" in df.columns:
-        age_num = pd.to_numeric(df["Q200"], errors="coerce")
-        bad = bad | (age_num.isna() & df["Q200"].notna())
-
-    return df.loc[~bad].reset_index(drop=True)
-
+def drop_qualtrics_metadata_rows(df):
+    return df.drop(index=1).reset_index(drop=True)
 
 def contains(x, text: str) -> bool:
     if pd.isna(x):
@@ -174,15 +142,6 @@ def process_nutrition_data(raw_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataF
     df = normalize_columns(raw_df)
     df = drop_qualtrics_metadata_rows(df)
 
-    needed = FOOD_COUNT_VARS + HOUR_VARS + [
-        "Q64", "Q65", "Q286", "Q179", "Q156_0001", "Q209", "Q210", "height_in", "weight_kg", "Q230", "Q200",
-        "Q213", "Q212", "Q215", "Q219", "Q224", "Q225", "Q152", "Q153", "Q154", "Q155", "Q157", "Q158",
-        "Q232", "Q240", "Q241", "Q245", "Q250", "Q251", "Q252", "Q253", "Q254", "Q165", "Q166", "Q182",
-    ]
-    out = ensure_columns(df.copy(), needed)
-
-    for col in FOOD_COUNT_VARS:
-        out[col] = out[col].apply(parse_food_count)
 
     aliases = {
         "fruits": "Q10", "driedfruit": "Q11", "fruitjuice": "Q12", "vegrlg": "Q149", "vegother": "Q146",
