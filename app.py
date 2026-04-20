@@ -222,11 +222,38 @@ def process(df_raw: pd.DataFrame):
         issue(report, 'Height column not found. BMI-related variables will be blank.')
     if 'Q210' not in df.columns:
         issue(report, 'Weight column not found. BMI-related variables will be blank.')
-    q209 = parse_numeric_first(get_col(df, 'Q209'))
-    q210 = parse_numeric_first(get_col(df, 'Q210'))
-    out['weightkg'] = q210 / 2.2
-    out['heightm'] = q209 * 0.0254
-    out['BMI'] = out['weightkg'] / (out['heightm'] * out['heightm'])
+# ---------- Height / Weight (robust logic) ----------
+
+height_in = pd.Series([pd.NA]*len(df), index=df.index)
+weight_lb = pd.Series([pd.NA]*len(df), index=df.index)
+
+# 1. Try original Qualtrics (Q209/Q210 from label detection)
+if 'Q209' in df.columns and 'Q210' in df.columns:
+    height_in = parse_numeric_first(df['Q209'])
+    weight_lb = parse_numeric_first(df['Q210'])
+    issue(report, 'Using Qualtrics height/weight (Q209/Q210)')
+
+# 2. Fallback: columns named Height / Weight
+elif 'Height' in df.columns and 'Weight' in df.columns:
+    height_in = parse_numeric_first(df['Height'])
+    weight_lb = parse_numeric_first(df['Weight'])
+    issue(report, 'Using fallback Height/Weight columns')
+
+# 3. Nothing found
+else:
+    issue(report, 'Height and Weight not found → BMI will be blank')
+
+# Convert units
+out['weightkg'] = weight_lb / 2.2
+out['heightm'] = height_in * 0.0254
+
+# BMI
+out['BMI'] = out['weightkg'] / (out['heightm'] * out['heightm'])
+
+# Flag missing
+miss_hw = out['weightkg'].isna() | out['heightm'].isna()
+if miss_hw.any():
+    issue(report, f'{int(miss_hw.sum())} row(s) missing height/weight → BMI, FFM, EA may be blank')
     miss_hw = out['weightkg'].isna() | out['heightm'].isna()
     if miss_hw.any():
         issue(report, f'{int(miss_hw.sum())} row(s) missing height and/or weight: BMI, FFM, EA per kg may be blank.')
