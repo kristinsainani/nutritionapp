@@ -122,17 +122,16 @@ def parse_hour_value(x) -> float:
 def load_input_file(uploaded_file) -> pd.DataFrame:
     name = uploaded_file.name.lower()
     if name.endswith(".csv"):
-        return pd.read_csv(uploaded_file)
-    if name.endswith(".xlsx") or name.endswith(".xls"):
-        return pd.read_excel(uploaded_file)
-    raise ValueError("Please upload a CSV or Excel file.")
+        df = pd.read_csv(uploaded_file)
+    elif name.endswith(".xlsx") or name.endswith(".xls"):
+        df = pd.read_excel(uploaded_file)
+    else:
+        raise ValueError("Please upload a CSV or Excel file.")
 
+    # ADD THIS LINE — makes missing columns behave like 0
+    global get
+    get = lambda c: df[c].fillna(0) if c in df.columns else 0
 
-def ensure_columns(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
-    df = df.copy()
-    for col in columns:
-        if col not in df.columns:
-            df[col] = np.nan
     return df
 
 
