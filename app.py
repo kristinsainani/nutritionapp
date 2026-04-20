@@ -740,7 +740,7 @@ st.title("Nutrition FFQ Processor")
 st.write(
     "Upload a Qualtrics export and this app will process it into the REDCap nutrition dataset from the SAS code. "
     "Alcohol is included again. If alcohol variables are missing, they are set to 0. "
-    "If Q209/Q210 are missing, the app warns you and uses height_in/weight_kg only if those are present."
+    "If Q209 (height in inches)/Q210 (weight in lbs) are missing, the app warns you. Add these columns labeled Q209 and Q210."
 )
 
 uploaded_file = st.file_uploader("Upload Qualtrics file", type=["xlsx", "xls", "csv"])
