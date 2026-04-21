@@ -243,6 +243,26 @@ def convert_hours_text(value):
 def build_nutrition1(df_raw):
     df = df_raw.copy()
 
+    # --- SAS-style variable initialization ---
+all_cols_needed = [
+    # dairy components
+    "milk","FlvMilk","Yogurt","FlvYogurt","cheese","cotcheese",
+
+    # fluids
+    "SwtBvg","SwtTCfee","OtrSwtBvg","NrgDrnk",
+    "coconutwater","zerocaldrnk","unSwtTCfee","water",
+
+    # alcohol
+    "beer","spirits","mixed","wine",
+
+    # sports nutrition
+    "nrgbar","probar","prodrnk","gel"
+]
+
+for col in all_cols_needed:
+    if col not in df.columns:
+        df[col] = np.nan
+
     # --- CLEAN + ENSURE COLUMNS ---
     required_cols = [
         "Q10","Q11","Q12","Q149","Q146","Q1","Q150","Q24","Q165_0001","Q23","Q148","Q161_0001","Q162_0001","Q163","Q164","Q27",
@@ -293,10 +313,59 @@ def build_nutrition1(df_raw):
     df["gender"] = df["Q230"]
     df["age"] = pd.to_numeric(df["Q200"], errors="coerce").fillna(0)
 
+        # --- RUNNING ---
+    df["runMETS"] = pd.to_numeric(df["Q219"], errors="coerce").fillna(0)
+    df["runpace"] = pd.to_numeric(df["Q213"], errors="coerce").fillna(0)
+    df["miles_wk"] = pd.to_numeric(df["Q218"], errors="coerce").fillna(0)
+    df["hrsrunning"] = (df["miles_wk"] * df["runpace"]) / 60
+
+    # --- WEIGHT LIFTING ---
+    df["weightliftMETS"] = pd.to_numeric(df["Q224"], errors="coerce").fillna(0)
+    df["weightlifthrs"] = df["Q221"].apply(convert_hours_text)
+
+    # --- BIKE ---
+    df["bikeMETS"] = pd.to_numeric(df["Q225"], errors="coerce").fillna(0)
+    df["bikehrs"] = df["Q223"].apply(convert_hours_text)
+
+    # --- ELLIPTICAL ---
+    df["ellipticalMETS"] = pd.to_numeric(df["Q226"], errors="coerce").fillna(0)
+    df["ellipticalhrs"] = df["Q222"].apply(convert_hours_text)
+
+    # --- AQUAJOG ---
+    df["aquajogMETS"] = pd.to_numeric(df["Q227"], errors="coerce").fillna(0)
+    df["aquajoghrs"] = df["Q220"].apply(convert_hours_text)
+
     # --- BODY FAT / FFM ---
     df["BodyFat"] = 1.2 * df["bmi"] + 0.23 * df["age"] - 10.8 * df["ismale"] - 5.4
     df["FFM"] = df["weightkg"] - df["weightkg"] * df["BodyFat"] * 0.01
 
+    df["milktype"] = np.nan
+    df["milktype"] = np.nan
+    df.loc[df["Q64"].str.contains("Non fat", na=False), "milktype"] = 1
+    df.loc[df["Q64"].str.contains("Low fat", na=False), "milktype"] = 2
+    df.loc[df["Q64"].str.contains("Regular", na=False), "milktype"] = 3
+    df.loc[df["Q64"].str.contains("Non-dairy", na=False), "milktype"] = 4
+    df["milktype"] = df["milktype"].fillna(2)
+
+    df["yogtype"] = np.nan
+    df.loc[df["Q65"].str.contains("Non fat", na=False), "yogtype"] = 1
+    df.loc[df["Q65"].str.contains("Low fat", na=False), "yogtype"] = 2
+    df.loc[df["Q65"].str.contains("Regular", na=False), "yogtype"] = 3
+    df.loc[df["Q65"].str.contains("Non-dairy", na=False), "yogtype"] = 4
+    df["yogtype"] = df["yogtype"].fillna(2)
+
+    df["cheesetype"] = np.nan
+    df.loc[df["Q179"].str.contains("Regular", na=False), "cheesetype"] = 1
+    df.loc[df["Q179"].str.contains("Reduced", na=False), "cheesetype"] = 2
+    df.loc[df["Q179"].str.contains("Non-dairy", na=False), "cheesetype"] = 3
+    df["cheesetype"] = df["cheesetype"].fillna(1)
+
+    df["slddessingtype"] = np.nan
+    df.loc[df["Q156_0001"].str.contains("Regular", na=False), "slddessingtype"] = 1
+    df.loc[df["Q156_0001"].str.contains("Reduced-fat", na=False), "slddessingtype"] = 2
+    df.loc[df["Q156_0001"].str.contains("Fat-free", na=False), "slddessingtype"] = 3
+    df["slddessingtype"] = df["slddessingtype"].fillna(1)
+    
     # --- VEGETABLES ---
     df["vegrlg"] = pd.to_numeric(df["Q149"], errors="coerce").fillna(0)
     df["vegother"] = pd.to_numeric(df["Q146"], errors="coerce").fillna(0)
@@ -397,6 +466,8 @@ def build_nutrition1(df_raw):
         df["pro"] = np.nan
     if "fat" not in df.columns:
         df["fat"] = np.nan
+
+    df["id"] = df["Q182"]
         
     return df
 
