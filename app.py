@@ -702,8 +702,8 @@ keep_cols = [
 ]
 
 keep_cols = [c for c in keep_cols if c in nutrition2.columns]
-    redcapnutrition = nutrition2[keep_cols].copy()
-    allnutrition = nutrition2[keep_cols].copy()
+redcapnutrition = nutrition2[keep_cols].copy()
+allnutrition = nutrition2[keep_cols].copy()
 
 st.success("Chunk 2 complete: nutrition2 + final outputs created.")
 
