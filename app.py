@@ -22,12 +22,6 @@ def read_uploaded_file(file):
     else:
         raise ValueError("Unsupported file type. Please upload a CSV, XLSX, or XLS file.")
 
-if uploaded_file is not None:
-    df = read_uploaded_file(uploaded_file)
-
-    missing_hw = ("Q209" not in df.columns) or ("Q210" not in df.columns)
-    if missing_hw:
-        st.warning("Please enter height in inches as Q209 and weight in lbs as Q210. Everything else will still run.")
 
 def clean_missing_strings(df):
     df = df.copy()
