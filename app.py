@@ -554,12 +554,37 @@ def build_nutrition2(nutrition1):
     # -------------------------
     # TOTALS (mirrors SAS sums)
     # -------------------------
-    df["total_fruit"] = df["fruits"] + df["driedfruit"] + df["fruitjuice"]
+# --- FRUIT ---
+df["fruitkcal"] = (df["fruits"]*60) + (df["driedfruit"]*60) + (df["fruitjuice"]*120/7)
+df["FruitCHO"] = (df["fruits"]*15) + (df["driedfruit"]*15) + (df["fruitjuice"]*30/7)
+df["FruitFiber"] = (df["fruits"]*2) + (df["driedfruit"]*2)
+df["fruit"] = (df["fruits"]/2) + (df["driedfruit"]/2) + (df["fruitjuice"]/7)
 
-    df["total_veg"] = (
-        df["vegrlg"] + df["vegother"] + df["TomSauc"] + df["TomJuice"] +
-        df["Legumess"] + df["Corn"] + df["PotatoNF"]
-    )
+# --- COCONUT WATER ---
+df["coconutwaterkcal"] = df["coconutwater"]*45/7
+df["coconutwatercho"] = df["coconutwater"]*10/7
+
+# --- NON-STARCHY VEGETABLES ---
+df["vegNSkcal"] = (df["vegrlg"]*25) + (df["vegother"]*37.5) + (df["TomSauc"]*50/7) + (df["TomJuice"]*50/7)
+df["vegNSCHO"] = (df["vegrlg"]*5) + (df["vegother"]*7.5) + (df["TomSauc"]*10/7) + (df["TomJuice"]*10/7)
+df["vegNSPRO"] = (df["vegrlg"]*2) + (df["vegother"]*3) + (df["TomSauc"]*4/7) + (df["TomJuice"]*4/7)
+df["vegNSFiber"] = (df["vegrlg"]*2.5) + (df["vegother"]*4) + (df["TomSauc"]*4/7) + (df["TomJuice"]*4/7)
+df["NSVeg"] = (df["vegrlg"]*0.5) + (df["vegother"]*1) + (df["TomSauc"]/7) + (df["TomJuice"]/7)
+
+# --- GRAINS ---
+df["Grainkcal"] = (df["plainbrd"]*80) + (df["BkdBrd"]*125) + (df["CRPast"]*80) + (df["GrnsOtr"]*125)
+df["GrainCHO"] = (df["plainbrd"]*15) + (df["BkdBrd"]*15) + (df["CRPast"]*15) + (df["GrnsOtr"]*15)
+df["GrainPRO"] = (df["plainbrd"]*3) + (df["BkdBrd"]*3) + (df["CRPast"]*3) + (df["GrnsOtr"]*3)
+df["GrainFAT"] = (df["BkdBrd"]*5) + (df["GrnsOtr"]*5)
+df["GrainFiber"] = (df["plainbrd"]*1) + (df["BkdBrd"]*1) + (df["CRPast"]*1) + (df["GrnsOtr"]*1)
+df["Grains"] = df["plainbrd"] + df["BkdBrd"] + df["CRPast"] + df["GrnsOtr"]
+
+# --- LEGUMES ---
+df["Legumeskcal"] = df["Legumess"]*100/7
+df["LegumesCHO"] = df["Legumess"]*15/7
+df["LegumesPRO"] = df["Legumess"]*6/7
+df["LegumesFiber"] = df["Legumess"]*5/7
+df["legumes"] = df["Legumess"]*0.14/2
 
     df["total_grains"] = (
         df["plainbrd"] + df["BkdBrd"] + df["CRPast"] + df["GrnsOtr"]
