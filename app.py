@@ -714,13 +714,13 @@ st.dataframe(redcapnutrition.head())
 st.write(redcapnutrition.columns.tolist())
     
     # Downloads
-    st.download_button(
+st.download_button(
         "Download redcapnutrition.csv",
         redcapnutrition.to_csv(index=False),
         "redcapnutrition.csv"
     )
 
-    st.download_button(
+st.download_button(
         "Download allnutrition.csv",
         allnutrition.to_csv(index=False),
         "allnutrition.csv"
