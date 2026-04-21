@@ -672,14 +672,15 @@ def build_nutrition2(nutrition1):
     df["prokg"] = df["pro"] / df["weightkg"]
     df["fatkg"] = df["fat"] / df["weightkg"]
 
-    # --- ENERGY EXPENDITURE (EEE) ---
-    df["EEE"] = (
-        df["run_MET_min"] +
-        df["lift_MET_min"] +
-        df["bike_MET_min"] +
-        df["elliptical_MET_min"] +
-        df["aquajog_MET_min"]
-    ) / 60
+met_cols = [
+    "run_MET_min",
+    "lift_MET_min",
+    "bike_MET_min",
+    "elliptical_MET_min",
+    "aquajog_MET_min"
+]
+
+df["EEE"] = df[[c for c in met_cols if c in df.columns]].sum(axis=1) / 60
 
     # --- ENERGY INTAKE / AVAILABILITY ---
     df["EI"] = df["kcaltotal"]
