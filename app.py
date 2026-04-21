@@ -683,7 +683,7 @@ met_cols = [
 df["EEE"] = df[[c for c in met_cols if c in df.columns]].sum(axis=1) / 60
 
     # --- ENERGY INTAKE / AVAILABILITY ---
-    df["EI"] = df["kcaltotal"]
+df["EI"] = df["kcaltotal"]
     df.loc[df["EI"] == 0, "EI"] = np.nan
 
     df["EI_kg"] = df["EI"] / df["weightkg"]
