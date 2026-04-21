@@ -243,6 +243,35 @@ def convert_hours_text(value):
 def build_nutrition1(df_raw):
     df = df_raw.copy()
 
+    # --- SAS-style: missing columns default to 0 ---
+all_cols_needed = [
+    # height / weight / demographics
+    "Q209","Q210","Q200","Q230",
+
+    # activity
+    "Q219","Q218","Q213","Q224","Q221",
+    "Q225","Q223","Q226","Q222","Q220",
+
+    # diet basics
+    "Q10","Q11","Q12","Q149","Q146","Q1","Q150",
+    "Q24","Q165_0001","Q23","Q148",
+    "Q161_0001","Q162_0001","Q163","Q164",
+    "Q27","Q28","Q29","Q177","Q178",
+
+    # behavior / diet flags
+    "Q152","Q153","Q245","Q250","Q251","Q252","Q253","Q254",
+
+    # dairy type variables
+    "Q64","Q65","Q179","Q156_0001",
+
+    # ID
+    "Q182"
+]
+
+for col in all_cols_needed:
+    if col not in df.columns:
+        df[col] = 0
+
     # --- SAS-style variable initialization ---
     all_cols_needed = [
         "milk","FlvMilk","Yogurt","FlvYogurt","cheese","cotcheese",
