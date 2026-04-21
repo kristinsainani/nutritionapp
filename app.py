@@ -680,10 +680,10 @@ met_cols = [
     "aquajog_MET_min"
 ]
 
-df["EEE"] = df[[c for c in met_cols if c in df.columns]].sum(axis=1) / 60
+    df["EEE"] = df[[c for c in met_cols if c in df.columns]].sum(axis=1) / 60
 
     # --- ENERGY INTAKE / AVAILABILITY ---
-df["EI"] = df["kcaltotal"]
+    df["EI"] = df["kcaltotal"]
     df.loc[df["EI"] == 0, "EI"] = np.nan
 
     df["EI_kg"] = df["EI"] / df["weightkg"]
@@ -708,7 +708,6 @@ df["EI"] = df["kcaltotal"]
     df["id"] = df["Q182"]
 
     return df
-
 
 # =========================
 # APPLY CHUNK 2
