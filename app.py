@@ -244,34 +244,30 @@ def build_nutrition1(df_raw):
     df = df_raw.copy()
 
     # --- SAS-style variable initialization ---
-all_cols_needed = [
-    # dairy components
-    "milk","FlvMilk","Yogurt","FlvYogurt","cheese","cotcheese",
+    all_cols_needed = [
+        "milk","FlvMilk","Yogurt","FlvYogurt","cheese","cotcheese",
+        "SwtBvg","SwtTCfee","OtrSwtBvg","NrgDrnk",
+        "coconutwater","zerocaldrnk","unSwtTCfee","water",
+        "beer","spirits","mixed","wine",
+        "nrgbar","probar","prodrnk","gel"
+    ]
 
-    # fluids
-    "SwtBvg","SwtTCfee","OtrSwtBvg","NrgDrnk",
-    "coconutwater","zerocaldrnk","unSwtTCfee","water",
-
-    # alcohol
-    "beer","spirits","mixed","wine",
-
-    # sports nutrition
-    "nrgbar","probar","prodrnk","gel"
-]
-
-for col in all_cols_needed:
-    if col not in df.columns:
-        df[col] = np.nan
+    for col in all_cols_needed:
+        if col not in df.columns:
+            df[col] = np.nan
 
     # --- CLEAN + ENSURE COLUMNS ---
     required_cols = [
-        "Q10","Q11","Q12","Q149","Q146","Q1","Q150","Q24","Q165_0001","Q23","Q148","Q161_0001","Q162_0001","Q163","Q164","Q27",
-        "Q28","Q29","Q177","Q178","Q33","Q169","Q170","Q168","Q171","Q35","Q261","Q262","Q263","Q264","Q265","Q266","Q267","Q268",
-        "Q26","Q270","Q271","Q160_0001","Q158_0001","Q134","Q42","Q61","Q62","Q63","Q43","Q60","Q278","Q279","Q280","Q276","Q257",
-        "Q125","Q281","Q282","Q285","Q284","Q273","Q272","Q52","Q269","Q289","Q290","Q291","Q292",
-        "Q64","Q65","Q286","Q179","Q156_0001","Q209","Q210","Q230","Q200","Q213","Q212","Q215","Q219","Q224","Q225",
-        "Q70","Q218","Q221","Q223","Q152","Q153","Q154","Q155","Q157","Q158","Q232","Q240","Q241","Q245",
-        "Q250","Q251","Q252","Q253","Q254","Q165","Q166"
+        "Q10","Q11","Q12","Q149","Q146","Q1","Q150","Q24","Q165_0001","Q23","Q148",
+        "Q161_0001","Q162_0001","Q163","Q164","Q27","Q28","Q29","Q177","Q178","Q33",
+        "Q169","Q170","Q168","Q171","Q35","Q261","Q262","Q263","Q264","Q265","Q266",
+        "Q267","Q268","Q26","Q270","Q271","Q160_0001","Q158_0001","Q134","Q42",
+        "Q61","Q62","Q63","Q43","Q60","Q278","Q279","Q280","Q276","Q257","Q125",
+        "Q281","Q282","Q285","Q284","Q273","Q272","Q52","Q269","Q289","Q290","Q291","Q292",
+        "Q64","Q65","Q286","Q179","Q156_0001","Q209","Q210","Q230","Q200","Q213","Q212",
+        "Q215","Q219","Q224","Q225","Q70","Q218","Q221","Q223","Q152","Q153","Q154",
+        "Q155","Q157","Q158","Q232","Q240","Q241","Q245","Q250","Q251","Q252",
+        "Q253","Q254","Q165","Q166"
     ]
 
     df = clean_missing_strings(df)
@@ -279,10 +275,13 @@ for col in all_cols_needed:
 
     # --- FOOD FREQUENCY ---
     food_vars = [
-        "Q10","Q11","Q12","Q149","Q146","Q1","Q150","Q24","Q165_0001","Q23","Q148","Q161_0001","Q162_0001","Q163","Q164","Q27",
-        "Q28","Q29","Q177","Q178","Q33","Q169","Q170","Q168","Q171","Q35","Q261","Q262","Q263","Q264","Q265","Q266","Q267","Q268",
-        "Q26","Q270","Q271","Q160_0001","Q158_0001","Q134","Q42","Q61","Q62","Q63","Q43","Q60","Q278","Q279","Q280","Q276","Q257",
-        "Q125","Q281","Q282","Q285","Q284","Q273","Q272","Q52","Q269","Q289","Q290","Q291","Q292"
+        "Q10","Q11","Q12","Q149","Q146","Q1","Q150","Q24","Q165_0001","Q23","Q148",
+        "Q161_0001","Q162_0001","Q163","Q164","Q27","Q28","Q29","Q177","Q178",
+        "Q33","Q169","Q170","Q168","Q171","Q35","Q261","Q262","Q263","Q264",
+        "Q265","Q266","Q267","Q268","Q26","Q270","Q271","Q160_0001","Q158_0001",
+        "Q134","Q42","Q61","Q62","Q63","Q43","Q60","Q278","Q279","Q280","Q276",
+        "Q257","Q125","Q281","Q282","Q285","Q284","Q273","Q272","Q52","Q269",
+        "Q289","Q290","Q291","Q292"
     ]
 
     for col in food_vars:
@@ -302,7 +301,6 @@ for col in all_cols_needed:
 
     df["weightkg"] = df["Q210"] / 2.2
     df["heightm"] = df["Q209"] * 0.0254
-
     df["bmi"] = df["weightkg"] / (df["heightm"] * df["heightm"])
 
     # --- SEX / AGE ---
@@ -313,7 +311,7 @@ for col in all_cols_needed:
     df["gender"] = df["Q230"]
     df["age"] = pd.to_numeric(df["Q200"], errors="coerce").fillna(0)
 
-        # --- RUNNING ---
+    # --- RUNNING ---
     df["runMETS"] = pd.to_numeric(df["Q219"], errors="coerce").fillna(0)
     df["runpace"] = pd.to_numeric(df["Q213"], errors="coerce").fillna(0)
     df["miles_wk"] = pd.to_numeric(df["Q218"], errors="coerce").fillna(0)
@@ -339,138 +337,48 @@ for col in all_cols_needed:
     df["BodyFat"] = 1.2 * df["bmi"] + 0.23 * df["age"] - 10.8 * df["ismale"] - 5.4
     df["FFM"] = df["weightkg"] - df["weightkg"] * df["BodyFat"] * 0.01
 
-    df["milktype"] = np.nan
-    df["milktype"] = np.nan
+    # --- MILK / YOGURT / CHEESE TYPES ---
+    df["milktype"] = 2
     df.loc[df["Q64"].str.contains("Non fat", na=False), "milktype"] = 1
     df.loc[df["Q64"].str.contains("Low fat", na=False), "milktype"] = 2
     df.loc[df["Q64"].str.contains("Regular", na=False), "milktype"] = 3
     df.loc[df["Q64"].str.contains("Non-dairy", na=False), "milktype"] = 4
-    df["milktype"] = df["milktype"].fillna(2)
 
-    df["yogtype"] = np.nan
+    df["yogtype"] = 2
     df.loc[df["Q65"].str.contains("Non fat", na=False), "yogtype"] = 1
     df.loc[df["Q65"].str.contains("Low fat", na=False), "yogtype"] = 2
     df.loc[df["Q65"].str.contains("Regular", na=False), "yogtype"] = 3
     df.loc[df["Q65"].str.contains("Non-dairy", na=False), "yogtype"] = 4
-    df["yogtype"] = df["yogtype"].fillna(2)
 
-    df["cheesetype"] = np.nan
-    df.loc[df["Q179"].str.contains("Regular", na=False), "cheesetype"] = 1
+    df["cheesetype"] = 1
     df.loc[df["Q179"].str.contains("Reduced", na=False), "cheesetype"] = 2
     df.loc[df["Q179"].str.contains("Non-dairy", na=False), "cheesetype"] = 3
-    df["cheesetype"] = df["cheesetype"].fillna(1)
 
-    df["slddessingtype"] = np.nan
-    df.loc[df["Q156_0001"].str.contains("Regular", na=False), "slddessingtype"] = 1
-    df.loc[df["Q156_0001"].str.contains("Reduced-fat", na=False), "slddessingtype"] = 2
-    df.loc[df["Q156_0001"].str.contains("Fat-free", na=False), "slddessingtype"] = 3
-    df["slddessingtype"] = df["slddessingtype"].fillna(1)
-    
     # --- VEGETABLES ---
     df["vegrlg"] = pd.to_numeric(df["Q149"], errors="coerce").fillna(0)
     df["vegother"] = pd.to_numeric(df["Q146"], errors="coerce").fillna(0)
-    df["TomSauc"] = pd.to_numeric(df["Q1"], errors="coerce").fillna(0)
-    df["TomJuice"] = pd.to_numeric(df["Q150"], errors="coerce").fillna(0)
 
-    # --- GRAINS ---
-    df["plainbrd"] = pd.to_numeric(df["Q24"], errors="coerce").fillna(0)
-    df["BkdBrd"] = pd.to_numeric(df["Q165_0001"], errors="coerce").fillna(0)
-    df["CRPast"] = pd.to_numeric(df["Q23"], errors="coerce").fillna(0)
-    df["GrnsOtr"] = pd.to_numeric(df["Q148"], errors="coerce").fillna(0)
-
-    # --- LEGUMES / STARCH ---
-    df["Legumess"] = pd.to_numeric(df["Q161_0001"], errors="coerce").fillna(0)
-    df["Corn"] = pd.to_numeric(df["Q162_0001"], errors="coerce").fillna(0)
-    df["PotatoNF"] = pd.to_numeric(df["Q163"], errors="coerce").fillna(0)
-    df["PotatoFr"] = pd.to_numeric(df["Q164"], errors="coerce").fillna(0)
-
-    # --- MEAT / PROTEIN ---
-    df["LeanMeat"] = pd.to_numeric(df["Q27"], errors="coerce").fillna(0)
-    df["FatMeat"] = pd.to_numeric(df["Q28"], errors="coerce").fillna(0)
-    df["FtyFish"] = pd.to_numeric(df["Q29"], errors="coerce").fillna(0)
-    df["WhEgg"] = pd.to_numeric(df["Q177"], errors="coerce").fillna(0)
-    df["EggWt"] = pd.to_numeric(df["Q178"], errors="coerce").fillna(0)
-
-    # --- MEALS / SNACKS ---
-    meals_map = {
-        "One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5,
-        "Six": 6, "Seven": 7, "Eight": 8, "Nine": 9, "Ten": 10
-    }
-
-    df["Mealsday"] = df["Q152"].map(meals_map)
-    df["SnacksDay"] = df["Q153"].map(meals_map)
-
-    # --- FASTING / SKIPPING ---
-    df["fasting"] = np.where(df["Q245"] == "Yes", 1, 0)
-    df["skip"] = np.where(df["Q250"] == "Yes", 1, 0)
-
-    # --- DIET TYPE ---
-    df["vegetarian"] = np.where(df["Q251"] == "Yes", 1, 0)
-    df["vegan"] = np.where(df["Q252"] == "Yes", 1, 0)
-
-    # --- RESTRICTIONS ---
-    df["restrict"] = np.where(df["Q253"] == "Yes", 1, 0)
-    df["restrictallergy"] = np.where(df["Q254"] == "Yes", 1, 0)
-
-    # --- HOUSING / FOOD ACCESS ---
-    df["housing"] = df["Q165"]
-    df["foodprep"] = df["Q166"]
-
-    # --- BEVERAGES / FLUIDS ---
-    df["fluids"] = (
-        df["SwtBvg"] +
-        df["SwtTCfee"] +
-        df["OtrSwtBvg"] +
-        df["NrgDrnk"] +
-        df["coconutwater"] +
-        df["zerocaldrnk"] +
-        df["unSwtTCfee"] +
-        df["water"]
-    )
-
-    # --- ALCOHOL ---
-    df["alcohol"] = (
-        df["beer"] +
-        df["spirits"] +
-        df["mixed"] +
-        df["wine"]
-    )
-
-    # --- SPORTS NUTRITION (RAW COUNTS) ---
-    df["barswk"] = df["nrgbar"]
-    df["probarswk"] = df["probar"]
-    df["prodrnkwk"] = df["prodrnk"]
-    df["gelchewwk"] = df["gel"]
-
-    # --- DRINK TYPES ---
-    df["caffdrnk"] = df["NrgDrnk"]
-
-    # --- DIET GROUPS (used later) ---
+    # --- DIET GROUPS ---
     df["fruit"] = df["fruits"] + df["driedfruit"] + df["fruitjuice"]
 
     df["NSVeg"] = df["vegrlg"] + df["vegother"]
-    df["StarchVeg"] = df["Corn"] + df["PotatoNF"] + df["PotatoFr"]
+    df["StarchVeg"] = df["Q162_0001"].fillna(0) + df["Q163"].fillna(0) + df["Q164"].fillna(0)
     df["VegAll"] = df["NSVeg"] + df["StarchVeg"]
 
-    df["Grains"] = df["plainbrd"] + df["BkdBrd"] + df["CRPast"] + df["GrnsOtr"]
+    df["Grains"] = df["Q24"].fillna(0) + df["Q165_0001"].fillna(0) + df["Q23"].fillna(0) + df["Q148"].fillna(0)
 
-    df["MtPltry"] = df["LeanMeat"] + df["FatMeat"]
-    df["eggs"] = df["WhEgg"] + df["EggWt"]
-    df["dairy"] = df["milk"] + df["FlvMilk"] + df["Yogurt"] + df["FlvYogurt"] + df["cheese"] + df["cotcheese"]
+    df["MtPltry"] = df["Q27"].fillna(0) + df["Q28"].fillna(0)
+    df["eggs"] = df["Q177"].fillna(0) + df["Q178"].fillna(0)
 
-    # --- MACROS (placeholders if not already computed upstream) ---
-    # Only include if your SAS had these — otherwise skip
-    if "cho" not in df.columns:
-        df["cho"] = np.nan
-    if "pro" not in df.columns:
-        df["pro"] = np.nan
-    if "fat" not in df.columns:
-        df["fat"] = np.nan
+    # --- DAIRY (NOW SAFE) ---
+    df["dairy"] = (
+        df["milk"] + df["FlvMilk"] + df["Yogurt"] +
+        df["FlvYogurt"] + df["cheese"] + df["cotcheese"]
+    )
 
     df["id"] = df["Q182"]
-        
-    return df
 
+    return df
 
 
 
