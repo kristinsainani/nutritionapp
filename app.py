@@ -13,15 +13,20 @@ uploaded_file = st.file_uploader("Upload Qualtrics export", type=["csv", "xlsx",
 def read_uploaded_file(file):
     if file.name.lower().endswith(".csv"):
         try:
-            return pd.read_csv(file, dtype=str, keep_default_na=False, na_values=[])
+            return pd.read_csv(file, skiprows=[1], dtype=str, keep_default_na=False, na_values=[])
         except Exception:
             file.seek(0)
-            return pd.read_csv(file, encoding="latin1", dtype=str, keep_default_na=False, na_values=[])
+            return pd.read_csv(file, skiprows=[1], encoding="latin1", dtype=str, keep_default_na=False, na_values=[])
     elif file.name.lower().endswith(".xlsx") or file.name.lower().endswith(".xls"):
-        return pd.read_excel(file, dtype=str)
+        return pd.read_excel(file, skiprows=[1], dtype=str)
     else:
         raise ValueError("Unsupported file type. Please upload a CSV, XLSX, or XLS file.")
 
+df = read_uploaded_file(uploaded_file)
+
+missing_hw = ("Q209" not in df.columns) or ("Q210" not in df.columns)
+if missing_hw:
+    st.warning("Please enter height in inches as Q209 and weight in lbs as Q210. Everything else will still run.")
 
 def clean_missing_strings(df):
     df = df.copy()
