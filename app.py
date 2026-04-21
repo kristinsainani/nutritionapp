@@ -524,8 +524,6 @@ if uploaded_file is not None:
 
     nutrition1 = build_nutrition1(raw_df)
 
-    st.success("Chunk 1 complete: nutrition1 created from the first SAS DATA step.")
-
 
 # =========================
 # CHUNK 2: nutrition2 + final outputs
