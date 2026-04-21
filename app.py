@@ -680,7 +680,7 @@ met_cols = [
     "aquajog_MET_min"
 ]
 
-    df["EEE"] = df[[c for c in met_cols if c in df.columns]].sum(axis=1) / 60
+df["EEE"] = df[[c for c in met_cols if c in df.columns]].sum(axis=1) / 60
 
     # --- ENERGY INTAKE / AVAILABILITY ---
     df["EI"] = df["kcaltotal"]
