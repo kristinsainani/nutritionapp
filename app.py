@@ -1,765 +1,694 @@
-import io
-import re
-import numpy as np
-from typing import List, Tuple
-
-
-import pandas as pd
 import streamlit as st
+import pandas as pd
+import numpy as np
+import re
+from io import BytesIO
 
-st.set_page_config(page_title="Nutrition FFQ Processor", layout="wide")
+st.set_page_config(page_title="Nutrition Processing App", layout="wide")
+st.title("Nutrition Processing App")
 
-FOOD_COUNT_VARS = [
-    "Q10", "Q11", "Q12", "Q149", "Q146", "Q1", "Q150", "Q24", "Q165_0001", "Q23", "Q148", "Q161_0001", "Q162_0001", "Q163", "Q164", "Q27",
-    "Q28", "Q29", "Q177", "Q178", "Q33", "Q169", "Q170", "Q168", "Q171", "Q35", "Q261", "Q262",
-    "Q263", "Q264", "Q265", "Q266", "Q267", "Q268", "Q26", "Q270", "Q271", "Q160_0001", "Q158_0001", "Q134", "Q42", "Q61", "Q62", "Q63", "Q43", "Q60", "Q278",
-    "Q279", "Q280", "Q276", "Q257", "Q125", "Q281", "Q282", "Q285", "Q284", "Q273", "Q272", "Q52", "Q269", "Q289", "Q290", "Q291", "Q292",
-]
-
-HOUR_VARS = ["Q70", "Q218", "Q221", "Q223"]
-
-REDCAP_KEEP = [
-    "id", "age", "gender", "ismale", "weightkg", "heightm", "bmi", "ffm", "eee", "ei", "ei_kg", "ea", "lowea_clinical", "lowea_subclinical",
-    "miles_wk", "fruit", "nsveg", "starchveg", "vegall", "legumes", "grains", "profoods", "mtpltry", "fttyfish", "eggs", "dairy", "fluids",
-    "cho", "chokg", "pro", "prokg", "fat", "fatkg", "fiber", "mealsday", "snacksday", "fasting", "skip", "vegetarian", "vegan", "restrict",
-    "restrictallergy", "housing", "foodprep", "foodinsecure", "percep1", "percep2", "percep3", "percep4", "percep5", "barswk", "probarswk",
-    "prodrnkwk", "gelchewwk", "chodrnk", "caffdrnk", "supp", "vitamin", "iron", "calcium", "vitamind", "caffeine", "creatine", "prewrkout",
-    "wtgainer", "wtlosssupp", "aasupp", "herbotsupp",
-]
-
-NUM_WORDS = {
-    "ONE": 1, "TWO": 2, "THREE": 3, "FOUR": 4, "FIVE": 5, "SIX": 6, "SEVEN": 7, "EIGHT": 8, "NINE": 9,
-    "TEN": 10, "ELEVEN": 11, "TWELVE": 12, "THIRTEEN": 13, "FOURTEEN": 14, "FIFTEEN": 15, "SIXTEEN": 16,
-    "SEVENTEEN": 17, "EIGHTEEN": 18, "NINETEEN": 19, "TWENTY": 20, "TWENTY-ONE": 21, "TWENTY-TWO": 22,
-    "TWENTY-THREE": 23, "TWENTY-FOUR": 24, "TWENTY-FIVE": 25, "TWENTY-SIX": 26, "TWENTY-SEVEN": 27,
-    "TWENTY-EIGHT": 28, "TWENTY-NINE": 29, "THIRTY": 30, "THIRTY-ONE": 31, "THIRTY-TWO": 32,
-    "THIRTY-THREE": 33, "THIRTY-FOUR": 34, "THIRTY-FIVE": 35,
-}
-NUM_PATTERNS = sorted(NUM_WORDS.items(), key=lambda kv: len(kv[0]), reverse=True)
-
-HOUR_WORDS = {
-    "HALF": 0.5,
-    "ONE AND A HALF": 1.5, "TWO AND A HALF": 2.5, "THREE AND A HALF": 3.5, "FOUR AND A HALF": 4.5,
-    "FIVE AND A HALF": 5.5, "SIX AND A HALF": 6.5, "SEVEN AND A HALF": 7.5, "EIGHT AND A HALF": 8.5,
-    "NINE AND A HALF": 9.5, "TEN AND A HALF": 10.5, "ELEVEN AND A HALF": 11.5, "TWELVE AND A HALF": 12.5,
-    "THIRTEEN AND A HALF": 13.5, "FOURTEEN AND A HALF": 14.5,
-    "ONE HOUR": 1, "TWO HOURS": 2, "THREE HOURS": 3, "FOUR HOURS": 4, "FIVE HOURS": 5,
-    "SIX HOURS": 6, "SEVEN HOURS": 7, "EIGHT HOURS": 8, "NINE HOURS": 9, "TEN HOURS": 10,
-    "ELEVEN HOURS": 11, "TWELVE HOURS": 12, "THIRTEEN HOURS": 13, "FOURTEEN HOURS": 14, "FIFTEEN HOURS": 15,
-}
-HOUR_PATTERNS = sorted(HOUR_WORDS.items(), key=lambda kv: len(kv[0]), reverse=True)
+uploaded_file = st.file_uploader("Upload Qualtrics export", type=["csv", "xlsx", "xls"])
 
 
-def drop_qualtrics_metadata_rows(df):
-    return df.drop(index=1).reset_index(drop=True)
+def read_uploaded_file(file):
+    if file.name.lower().endswith(".csv"):
+        try:
+            return pd.read_csv(file, dtype=str, keep_default_na=False, na_values=[])
+        except Exception:
+            file.seek(0)
+            return pd.read_csv(file, encoding="latin1", dtype=str, keep_default_na=False, na_values=[])
+    elif file.name.lower().endswith(".xlsx") or file.name.lower().endswith(".xls"):
+        return pd.read_excel(file, dtype=str)
+    else:
+        raise ValueError("Unsupported file type. Please upload a CSV, XLSX, or XLS file.")
 
-def contains(x, text: str) -> bool:
-    if pd.isna(x):
+
+def clean_missing_strings(df):
+    df = df.copy()
+    df = df.fillna("")
+    return df
+
+
+def ensure_columns(df, cols):
+    df = df.copy()
+    for col in cols:
+        if col not in df.columns:
+            df[col] = ""
+    return df
+
+
+def sas_index(value, substring):
+    if pd.isna(value):
+        return 0
+    return 1 if substring in str(value) else 0
+
+
+def sas_index_eq_1(value, substring):
+    if pd.isna(value):
         return False
-    return text.lower() in str(x).lower()
+    return str(value).startswith(substring)
 
 
-def extract_first_numeric(x):
-    if pd.isna(x):
+def to_num(value):
+    if pd.isna(value):
         return np.nan
-    if isinstance(x, (int, float, np.integer, np.floating)):
-        return float(x)
-    match = re.search(r"(\d+(?:\.\d+)?)", str(x))
-    return float(match.group(1)) if match else np.nan
+    s = str(value).strip()
+    if s == "":
+        return np.nan
+    try:
+        return float(s)
+    except Exception:
+        return np.nan
 
 
-def parse_food_count(x) -> float:
-    if pd.isna(x):
-        return 0.0
-    if isinstance(x, (int, float, np.integer, np.floating)):
-        return 0.0 if pd.isna(x) else float(x)
-
-    s = str(x).strip().upper()
-    if s in {"", "NAN", "NONE"}:
-        return 0.0
-    if "PREFER NOT TO ANSWER" in s or "< ONE" in s or "LESS THAN ONE" in s:
-        return 0.0
-    if "> THIRTY-FIVE" in s:
-        return 36.0
-    if "> THIRTY" in s:
-        return 31.0
-    if "> FIFTEEN" in s:
-        return 16.0
-
-    for pat, value in NUM_PATTERNS:
-        if pat in {"ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TWENTY", "THIRTY", "FIFTEEN", "THIRTY-FIVE"}:
-            if s.startswith(pat):
-                return float(value)
-        elif pat in s:
-            return float(value)
-
-    nums = re.findall(r"\d+(?:\.\d+)?", s)
-    if nums:
-        return float(nums[0])
-    return 0.0
+def first_numeric_from_string(value):
+    if pd.isna(value):
+        return ""
+    s = str(value)
+    keep = re.sub(r"[^0-9.\-]", " ", s)
+    parts = keep.split()
+    if len(parts) == 0:
+        return ""
+    return parts[0]
 
 
-def parse_hour_value(x) -> float:
-    if pd.isna(x):
-        return 0.0
-    if isinstance(x, (int, float, np.integer, np.floating)):
-        return 0.0 if pd.isna(x) else float(x)
+def convert_food_frequency(value):
+    if pd.isna(value):
+        return 0
+    v = str(value)
 
-    s = str(x).strip().upper()
-    if s in {"", "NAN", "NONE", "NO DAYS"}:
-        return 0.0
-
-    for pat, value in HOUR_PATTERNS:
-        if s.startswith(pat):
-            return float(value)
-
-    nums = re.findall(r"\d+(?:\.\d+)?", s)
-    if nums:
-        return float(nums[0])
-    return 0.0
-
-
-def load_input_file(uploaded_file) -> pd.DataFrame:
-    name = uploaded_file.name.lower()
-    if name.endswith(".csv"):
-        df = pd.read_csv(uploaded_file)
-    elif name.endswith(".xlsx") or name.endswith(".xls"):
-        df = pd.read_excel(uploaded_file)
-    else:
-        raise ValueError("Please upload a CSV or Excel file.")
-
-    # ADD THIS LINE — makes missing columns behave like 0
-# Ensure all expected columns exist
-for col in FOOD_COUNT_VARS:
-    if col not in df.columns:
-        df[col] = 0
-
-# Clean values so math never breaks
-df[FOOD_COUNT_VARS] = df[FOOD_COUNT_VARS].apply(
-    pd.to_numeric, errors='coerce'
-).fillna(0)
-
-
-def process_nutrition_data(raw_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, List[str], pd.DataFrame]:
-    warnings: List[str] = []
-
-    df = raw_df.copy()
-    out = df.copy()
-
-
-    aliases = {
-        "fruits": "Q10", "driedfruit": "Q11", "fruitjuice": "Q12", "vegrlg": "Q149", "vegother": "Q146",
-        "tomsauc": "Q1", "tomjuice": "Q150", "plainbrd": "Q24", "bkdbrd": "Q165_0001", "crpast": "Q23",
-        "grnsotr": "Q148", "legumess": "Q161_0001", "corn": "Q162_0001", "potatonf": "Q163", "potatofr": "Q164",
-        "leanmeat": "Q27", "fatmeat": "Q28", "ftyfish": "Q29", "whegg": "Q177", "eggwt": "Q178",
-        "milk": "Q33", "flvmilk": "Q169", "yogurt": "Q170", "flvyogurt": "Q168", "cheese": "Q171",
-        "cotcheese": "Q35", "vegoil": "Q261", "nutbtr": "Q262", "cocoilbt": "Q263", "butter": "Q264",
-        "lard": "Q265", "srcrm": "Q266", "crmchs": "Q267", "cream": "Q268", "mayo": "Q269",
-        "mrgrne": "Q270", "hlfhlf": "Q271", "olives": "Q160_0001", "nuts": "Q158_0001", "avocado": "Q134",
-        "choccndy": "Q42", "nonchccndy": "Q61", "icecrm": "Q62", "froyo": "Q63", "bkdgd": "Q43",
-        "swtbvg": "Q60", "swttcfee": "Q278", "nrgdrnk": "Q279", "otrswtbvg": "Q280", "coconutwater": "Q276",
-        "slddressing": "Q257", "nrgbar": "Q125", "probar": "Q281", "chodrnk": "Q282", "gel": "Q285",
-        "prodrnk": "Q284", "zerocaldrnk": "Q273", "unswttcfee": "Q272", "water": "Q52", "beer": "Q289",
-        "spirits": "Q290", "mixed": "Q291", "wine": "Q292",
-    }
-    for new_col, old_col in aliases.items():
-        out[new_col] = pd.to_numeric(out[old_col], errors="coerce").fillna(0)
-
-    # alcohol: put back; if missing, set to 0
-    for alcohol_col in ["beer", "spirits", "mixed", "wine"]:
-        out[alcohol_col] = pd.to_numeric(out[alcohol_col], errors="coerce").fillna(0)
-
-    out["milktype"] = out["Q64"].apply(
-        lambda x: 1 if contains(x, "Non fat") else 2 if contains(x, "Low fat") else 3 if contains(x, "Regular")
-        else 4 if contains(x, "Non-dairy [soy milk]") else 5 if contains(x, "Non-dairy [almond milk,") else 2
-    )
-
-    def map_yogtype(x):
-        if contains(x, "Non fat yogurt"):
-            return 1
-        if contains(x, "Low fat yogurt"):
-            return 2
-        if contains(x, "Regular (full-fat) yogurt"):
-            return 3
-        if contains(x, "Non-dairy yogurt"):
-            return 4
-        if contains(x, "Greek yogurt (non fat"):
-            return 5
-        if contains(x, "Greek yogurt (regular"):
-            return 6
+    if v == "PREFER NOT TO ANSWER":
+        return 0
+    if sas_index(v, "< ONE") > 0:
+        return 0
+    if sas_index(v, "LESS THAN ONE") > 0:
+        return 0
+    if sas_index_eq_1(v, "ONE"):
+        return 1
+    if sas_index_eq_1(v, "TWO"):
         return 2
+    if sas_index_eq_1(v, "THREE"):
+        return 3
+    if sas_index_eq_1(v, "FOUR "):
+        return 4
+    if sas_index_eq_1(v, "FIVE"):
+        return 5
+    if sas_index_eq_1(v, "SIX "):
+        return 6
+    if sas_index_eq_1(v, "SEVEN "):
+        return 7
+    if sas_index_eq_1(v, "EIGHT "):
+        return 8
+    if sas_index_eq_1(v, "NINE "):
+        return 9
+    if sas_index(v, "TEN") > 0:
+        return 10
+    if sas_index(v, "ELEVEN") > 0:
+        return 11
+    if sas_index(v, "TWELVE") > 0:
+        return 12
+    if sas_index(v, "THIRTEEN") > 0:
+        return 13
+    if sas_index(v, "FOURTEEN") > 0:
+        return 14
+    if sas_index_eq_1(v, "FIFTEEN"):
+        return 15
+    if sas_index(v, "> FIFTEEN") > 0:
+        return 16
+    if sas_index(v, "SIXTEEN") > 0:
+        return 16
+    if sas_index(v, "SEVENTEEN") > 0:
+        return 17
+    if sas_index(v, "EIGHTEEN") > 0:
+        return 18
+    if sas_index(v, "NINETEEN") > 0:
+        return 19
+    if sas_index_eq_1(v, "TWENTY "):
+        return 20
+    if sas_index(v, "TWENTY-ONE") > 0:
+        return 21
+    if sas_index(v, "TWENTY-TWO") > 0:
+        return 22
+    if sas_index(v, "TWENTY-THREE") > 0:
+        return 23
+    if sas_index(v, "TWENTY-FOUR") > 0:
+        return 24
+    if sas_index(v, "TWENTY-FIVE") > 0:
+        return 25
+    if sas_index(v, "TWENTY-SIX") > 0:
+        return 26
+    if sas_index(v, "TWENTY-SEVEN") > 0:
+        return 27
+    if sas_index(v, "TWENTY-EIGHT") > 0:
+        return 28
+    if sas_index(v, "TWENTY-NINE") > 0:
+        return 29
+    if sas_index_eq_1(v, "THIRTY "):
+        return 30
+    if sas_index(v, "> THIRTY") > 0:
+        return 31
+    if sas_index(v, "THIRTY-ONE") > 0:
+        return 31
+    if sas_index(v, "THIRTY-TWO") > 0:
+        return 32
+    if sas_index(v, "THIRTY-THREE") > 0:
+        return 33
+    if sas_index(v, "THIRTY-FOUR") > 0:
+        return 34
+    if sas_index_eq_1(v, "THIRTY-FIVE"):
+        return 35
+    if sas_index(v, "> THIRTY-FIVE") > 0:
+        return 36
 
-    def map_flvyogtype(x):
-        value = np.nan
-        s = "" if pd.isna(x) else str(x)
-        if "Non fat yogurt" in s:
-            value = 1
-        if "Low fat yogurt" in s:
-            value = 2
-        if "Non-dairy yogurt" in s:
-            value = 3
-        if "Greek yogurt" in s:
-            value = 4
-        if 'Non fat "no sugar added" or "diet" yogurt' in s:
-            value = 5
-        return 2 if pd.isna(value) else value
+    num = to_num(v)
+    if pd.isna(num):
+        return 0
+    return num
 
-    def map_cheesetype(x):
-        if contains(x, "Regular dairy cheese"):
-            return 1
-        if contains(x, "Reduced fat or light"):
-            return 2
-        if contains(x, "Non-dairy cheese"):
-            return 3
+
+def convert_hours_text(value):
+    if pd.isna(value):
+        return 0
+    v = str(value)
+
+    if v == "None":
+        return 0
+    if sas_index_eq_1(v, "HALF"):
+        return 0.5
+    if sas_index_eq_1(v, "ONE hour"):
         return 1
+    if sas_index_eq_1(v, "ONE and a HALF"):
+        return 1.5
+    if sas_index_eq_1(v, "TWO and a HALF"):
+        return 2.5
+    if sas_index_eq_1(v, "TWO"):
+        return 2
+    if sas_index_eq_1(v, "THREE and a HALF"):
+        return 3.5
+    if sas_index_eq_1(v, "THREE hours"):
+        return 3
+    if sas_index_eq_1(v, "FOUR and a HALF"):
+        return 4.5
+    if sas_index_eq_1(v, "FOUR hours"):
+        return 4
+    if sas_index_eq_1(v, "FIVE and a HALF"):
+        return 5.5
+    if sas_index_eq_1(v, "FIVE hours"):
+        return 5
+    if sas_index_eq_1(v, "SIX and a HALF"):
+        return 6.5
+    if sas_index_eq_1(v, "SIX hours"):
+        return 6
+    if sas_index_eq_1(v, "SEVEN and a HALF"):
+        return 7.5
+    if sas_index_eq_1(v, "SEVEN hours"):
+        return 7
+    if sas_index_eq_1(v, "EIGHT and a HALF"):
+        return 8.5
+    if sas_index_eq_1(v, "EIGHT hours"):
+        return 8
+    if sas_index_eq_1(v, "NINE and a HALF"):
+        return 9.5
+    if sas_index_eq_1(v, "NINE hours"):
+        return 9
+    if sas_index_eq_1(v, "TEN and a HALF"):
+        return 10.5
+    if sas_index_eq_1(v, "TEN hours"):
+        return 10
+    if sas_index_eq_1(v, "ELEVEN and a HALF"):
+        return 11.5
+    if sas_index_eq_1(v, "ELEVEN hours"):
+        return 11
+    if sas_index_eq_1(v, "TWELVE and a HALF"):
+        return 12.5
+    if sas_index_eq_1(v, "TWELVE hours"):
+        return 12
+    if sas_index_eq_1(v, "THIRTEEN and a HALF"):
+        return 13.5
+    if sas_index_eq_1(v, "THIRTEEN hours"):
+        return 13
+    if sas_index_eq_1(v, "FOURTEEN and a HALF"):
+        return 14.5
+    if sas_index_eq_1(v, "FOURTEEN hours"):
+        return 14
+    if sas_index_eq_1(v, "FIFTEEN hours"):
+        return 15
 
-    def map_dressingtype(x):
-        if contains(x, "Regular"):
-            return 1
-        if contains(x, "Reduced-fat"):
-            return 2
-        if contains(x, "Fat-free"):
-            return 3
-        return 1
+    num = to_num(v)
+    if pd.isna(num):
+        return 0
+    return num
 
-    out["yogtype"] = out["Q65"].apply(map_yogtype)
-    out["flvyogtype"] = out["Q286"].apply(map_flvyogtype)
-    out["cheesetype"] = out["Q179"].apply(map_cheesetype)
-    out["slddessingtype"] = out["Q156_0001"].apply(map_dressingtype)
 
-    if "Q209" in out.columns and out["Q209"].notna().any():
-        hsrc = "Q209"
-    elif "height_in" in out.columns and out["height_in"].notna().any():
-        hsrc = "height_in"
-        warnings.append("Q209 (height) was missing. Please add a column for height in inches labeled Q209.")
-    else:
-        hsrc = None
-        warnings.append("Missing Q209/height_in. Height-based outputs such as heightm, BMI, FFM, EA, and related variables could not be fully calculated.")
+def build_nutrition1(df_raw):
+    df = df_raw.copy()
 
-    if "Q210" in out.columns and out["Q210"].notna().any():
-        wsrc = "Q210"
-    elif "weight_kg" in out.columns and out["weight_kg"].notna().any():
-        wsrc = "weight_kg"
-        warnings.append("Q210 (weight) was missing. Please add a column for weight in lbs labeled Q10.")
-    else:
-        wsrc = None
-        warnings.append("Missing Q210/weight_kg. Weight-based outputs such as weightkg, BMI, FFM, EEE, EA, and related variables could not be fully calculated.")
+    required_cols = [
+        "Q10","Q11","Q12","Q149","Q146","Q1","Q150","Q24","Q165_0001","Q23","Q148","Q161_0001","Q162_0001","Q163","Q164","Q27",
+        "Q28","Q29","Q177","Q178","Q33","Q169","Q170","Q168","Q171","Q35","Q261","Q262","Q263","Q264","Q265","Q266","Q267","Q268",
+        "Q26","Q270","Q271","Q160_0001","Q158_0001","Q134","Q42","Q61","Q62","Q63","Q43","Q60","Q278","Q279","Q280","Q276","Q257",
+        "Q125","Q281","Q282","Q285","Q284","Q273","Q272","Q52","Q269","Q289","Q290","Q291","Q292",
+        "Q64","Q65","Q286","Q179","Q156_0001","Q209","Q210","Q230","Q200","Q213","Q212","Q215","Q219","Q224","Q225",
+        "Q70","Q218","Q221","Q223","Q152","Q153","Q154","Q155","Q157","Q158","Q232","Q240","Q241","Q245",
+        "Q250","Q251","Q252","Q253","Q254","Q165","Q166"
+    ]
 
-    if hsrc is not None:
-        out["_height_raw"] = out[hsrc].apply(extract_first_numeric)
-        out["heightm"] = out["_height_raw"] * 0.0254
-    else:
-        out["_height_raw"] = np.nan
-        out["heightm"] = np.nan
+    df = clean_missing_strings(df)
+    df = ensure_columns(df, required_cols)
 
-    if wsrc is not None:
-        weight_raw = out[wsrc].apply(extract_first_numeric)
-        out["weightkg"] = weight_raw if wsrc == "weight_kg" else weight_raw / 2.2
-    else:
-        out["weightkg"] = np.nan
+    food_vars = [
+        "Q10","Q11","Q12","Q149","Q146","Q1","Q150","Q24","Q165_0001","Q23","Q148","Q161_0001","Q162_0001","Q163","Q164","Q27",
+        "Q28","Q29","Q177","Q178","Q33","Q169","Q170","Q168","Q171","Q35","Q261","Q262","Q263","Q264","Q265","Q266","Q267","Q268",
+        "Q26","Q270","Q271","Q160_0001","Q158_0001","Q134","Q42","Q61","Q62","Q63","Q43","Q60","Q278","Q279","Q280","Q276","Q257",
+        "Q125","Q281","Q282","Q285","Q284","Q273","Q272","Q52","Q269","Q289","Q290","Q291","Q292"
+    ]
 
-    out["bmi"] = out["weightkg"] / (out["heightm"] * out["heightm"])
-    out["ismale"] = out["Q230"].map({"Female": 0, "Male": 1})
-    out["gender"] = out["Q230"]
-    out["age"] = pd.to_numeric(out["Q200"], errors="coerce")
+    for col in food_vars:
+        df[col] = df[col].apply(convert_food_frequency)
 
-    def run_values(x):
-        s = "" if pd.isna(x) else str(x)
-        mapping = [
-            ("5:30", (5.5, 16)), ("6:00", (6.0, 14.5)), ("6:30", (6.5, 12.8)), ("7:00", (7.0, 12.3)),
-            ("7:30", (7.5, 11.8)), ("8:00", (8.0, 11.8)), ("8:30", (8.5, 11.0)), ("9:00", (9.0, 10.5)),
-        ]
-        for key, value in mapping:
-            if key in s:
-                return value
-        return (8.0, 11.8)
+    df["fruits"] = pd.to_numeric(df["Q10"], errors="coerce").fillna(0)
+    df["driedfruit"] = pd.to_numeric(df["Q11"], errors="coerce").fillna(0)
+    df["fruitjuice"] = pd.to_numeric(df["Q12"], errors="coerce").fillna(0)
+    df["vegrlg"] = pd.to_numeric(df["Q149"], errors="coerce").fillna(0)
+    df["vegother"] = pd.to_numeric(df["Q146"], errors="coerce").fillna(0)
+    df["TomSauc"] = pd.to_numeric(df["Q1"], errors="coerce").fillna(0)
+    df["TomJuice"] = pd.to_numeric(df["Q150"], errors="coerce").fillna(0)
+    df["plainbrd"] = pd.to_numeric(df["Q24"], errors="coerce").fillna(0)
+    df["BkdBrd"] = pd.to_numeric(df["Q165_0001"], errors="coerce").fillna(0)
+    df["CRPast"] = pd.to_numeric(df["Q23"], errors="coerce").fillna(0)
+    df["GrnsOtr"] = pd.to_numeric(df["Q148"], errors="coerce").fillna(0)
+    df["Legumess"] = pd.to_numeric(df["Q161_0001"], errors="coerce").fillna(0)
+    df["Corn"] = pd.to_numeric(df["Q162_0001"], errors="coerce").fillna(0)
+    df["PotatoNF"] = pd.to_numeric(df["Q163"], errors="coerce").fillna(0)
+    df["PotatoFr"] = pd.to_numeric(df["Q164"], errors="coerce").fillna(0)
+    df["LeanMeat"] = pd.to_numeric(df["Q27"], errors="coerce").fillna(0)
+    df["FatMeat"] = pd.to_numeric(df["Q28"], errors="coerce").fillna(0)
+    df["FtyFish"] = pd.to_numeric(df["Q29"], errors="coerce").fillna(0)
+    df["WhEgg"] = pd.to_numeric(df["Q177"], errors="coerce").fillna(0)
+    df["EggWt"] = pd.to_numeric(df["Q178"], errors="coerce").fillna(0)
+    df["milk"] = pd.to_numeric(df["Q33"], errors="coerce").fillna(0)
+    df["FlvMilk"] = pd.to_numeric(df["Q169"], errors="coerce").fillna(0)
+    df["Yogurt"] = pd.to_numeric(df["Q170"], errors="coerce").fillna(0)
+    df["FlvYogurt"] = pd.to_numeric(df["Q168"], errors="coerce").fillna(0)
+    df["cheese"] = pd.to_numeric(df["Q171"], errors="coerce").fillna(0)
+    df["cotcheese"] = pd.to_numeric(df["Q35"], errors="coerce").fillna(0)
+    df["vegoil"] = pd.to_numeric(df["Q261"], errors="coerce").fillna(0)
+    df["nutbtr"] = pd.to_numeric(df["Q262"], errors="coerce").fillna(0)
+    df["CocOilBt"] = pd.to_numeric(df["Q263"], errors="coerce").fillna(0)
+    df["Butter"] = pd.to_numeric(df["Q264"], errors="coerce").fillna(0)
+    df["lard"] = pd.to_numeric(df["Q265"], errors="coerce").fillna(0)
+    df["SrCrm"] = pd.to_numeric(df["Q266"], errors="coerce").fillna(0)
+    df["CrmChs"] = pd.to_numeric(df["Q267"], errors="coerce").fillna(0)
+    df["Cream"] = pd.to_numeric(df["Q268"], errors="coerce").fillna(0)
+    df["Mayo"] = pd.to_numeric(df["Q269"], errors="coerce").fillna(0)
+    df["Mrgrne"] = pd.to_numeric(df["Q270"], errors="coerce").fillna(0)
+    df["HlfHlf"] = pd.to_numeric(df["Q271"], errors="coerce").fillna(0)
+    df["olives"] = pd.to_numeric(df["Q160_0001"], errors="coerce").fillna(0)
+    df["nuts"] = pd.to_numeric(df["Q158_0001"], errors="coerce").fillna(0)
+    df["avocado"] = pd.to_numeric(df["Q134"], errors="coerce").fillna(0)
+    df["ChocCndy"] = pd.to_numeric(df["Q42"], errors="coerce").fillna(0)
+    df["NonChcCndy"] = pd.to_numeric(df["Q61"], errors="coerce").fillna(0)
+    df["IceCrm"] = pd.to_numeric(df["Q62"], errors="coerce").fillna(0)
+    df["FroYo"] = pd.to_numeric(df["Q63"], errors="coerce").fillna(0)
+    df["BkdGd"] = pd.to_numeric(df["Q43"], errors="coerce").fillna(0)
+    df["SwtBvg"] = pd.to_numeric(df["Q60"], errors="coerce").fillna(0)
+    df["SwtTCfee"] = pd.to_numeric(df["Q278"], errors="coerce").fillna(0)
+    df["OtrSwtBvg"] = pd.to_numeric(df["Q280"], errors="coerce").fillna(0)
+    df["NrgDrnk"] = pd.to_numeric(df["Q279"], errors="coerce").fillna(0)
+    df["coconutwater"] = pd.to_numeric(df["Q276"], errors="coerce").fillna(0)
+    df["slddressing"] = pd.to_numeric(df["Q257"], errors="coerce").fillna(0)
+    df["nrgbar"] = pd.to_numeric(df["Q125"], errors="coerce").fillna(0)
+    df["probar"] = pd.to_numeric(df["Q281"], errors="coerce").fillna(0)
+    df["chodrnk"] = pd.to_numeric(df["Q282"], errors="coerce").fillna(0)
+    df["gel"] = pd.to_numeric(df["Q285"], errors="coerce").fillna(0)
+    df["prodrnk"] = pd.to_numeric(df["Q284"], errors="coerce").fillna(0)
+    df["zerocaldrnk"] = pd.to_numeric(df["Q273"], errors="coerce").fillna(0)
+    df["unSwtTCfee"] = pd.to_numeric(df["Q272"], errors="coerce").fillna(0)
+    df["water"] = pd.to_numeric(df["Q52"], errors="coerce").fillna(0)
+    df["beer"] = pd.to_numeric(df["Q289"], errors="coerce").fillna(0)
+    df["spirits"] = pd.to_numeric(df["Q290"], errors="coerce").fillna(0)
+    df["mixed"] = pd.to_numeric(df["Q291"], errors="coerce").fillna(0)
+    df["wine"] = pd.to_numeric(df["Q292"], errors="coerce").fillna(0)
 
-    run_info = out["Q213"].apply(run_values)
-    out["runpace"] = [x[0] for x in run_info]
-    out["runmets"] = [x[1] for x in run_info]
-    out["miles_wk"] = pd.to_numeric(out["Q212"].apply(extract_first_numeric), errors="coerce").fillna(0)
-    out["hrsrunning"] = (out["miles_wk"] * out["runpace"]) / 60
+    df["milktype"] = np.nan
+    df.loc[df["Q64"].str.contains("Non fat", na=False), "milktype"] = 1
+    df.loc[df["Q64"].str.contains("Low fat", na=False), "milktype"] = 2
+    df.loc[df["Q64"].str.contains("Regular", na=False), "milktype"] = 3
+    df.loc[df["Q64"].str.contains("Non-dairy \\[soy milk\\]", regex=True, na=False), "milktype"] = 4
+    df.loc[df["Q64"].str.contains("Non-dairy \\[almond milk,", regex=True, na=False), "milktype"] = 5
+    df["milktype"] = df["milktype"].fillna(2)
 
-    def intensity_to_mets(x, high, moderate, low, default):
-        s = "" if pd.isna(x) else str(x)
-        if "High" in s:
-            return high
-        if "Moderate" in s:
-            return moderate
-        if "Low" in s:
-            return low
-        return default
+    df["yogtype"] = np.nan
+    df.loc[df["Q65"].str.contains("Non fat yogurt", na=False), "yogtype"] = 1
+    df.loc[df["Q65"].str.contains("Low fat yogurt", na=False), "yogtype"] = 2
+    df.loc[df["Q65"].str.contains("Regular \\(full-fat\\) yogurt", regex=True, na=False), "yogtype"] = 3
+    df.loc[df["Q65"].str.contains("Non-dairy yogurt", na=False), "yogtype"] = 4
+    df.loc[df["Q65"].str.contains("Greek yogurt \\(non fat", regex=True, na=False), "yogtype"] = 5
+    df.loc[df["Q65"].str.contains("Greek yogurt \\(regular", regex=True, na=False), "yogtype"] = 6
+    df["yogtype"] = df["yogtype"].fillna(2)
 
-    out["weightliftmets"] = out["Q215"].apply(lambda x: intensity_to_mets(x, 6, 5, 3.5, 5))
-    out["aquajogmets"] = out["Q219"].apply(lambda x: intensity_to_mets(x, 9.8, 6.8, 4.8, 6.8))
-    out["bikemets"] = out["Q224"].apply(lambda x: intensity_to_mets(x, 10, 8, 6.8, 8))
-    out["ellipticalmets"] = out["Q225"].apply(lambda x: intensity_to_mets(x, 9, 7, 5, 7))
+    df["flvyogtype"] = np.nan
+    df.loc[df["Q286"].str.contains("Non fat yogurt", na=False), "flvyogtype"] = 1
+    df.loc[df["Q286"].str.contains("Low fat yogurt", na=False), "flvyogtype"] = 2
+    df.loc[df["Q286"].str.contains("Non-dairy yogurt", na=False), "flvyogtype"] = 3
+    df.loc[df["Q286"].str.contains("Greek yogurt", na=False), "flvyogtype"] = 4
+    df.loc[df["Q286"].str.contains('Non fat "no sugar added" or "diet" yogurt', regex=False, na=False), "flvyogtype"] = 5
+    df["flvyogtype"] = df["flvyogtype"].fillna(2)
 
-    for src, dest in zip(HOUR_VARS, ["weightlifthrs", "aquajoghrs", "bikehrs", "ellipticalhrs"]):
-        out[dest] = out[src].apply(parse_hour_value)
+    df["cheesetype"] = np.nan
+    df.loc[df["Q179"].str.contains("Regular dairy cheese", na=False), "cheesetype"] = 1
+    df.loc[df["Q179"].str.contains("Reduced fat or light", na=False), "cheesetype"] = 2
+    df.loc[df["Q179"].str.contains("Non-dairy cheese", na=False), "cheesetype"] = 3
+    df["cheesetype"] = df["cheesetype"].fillna(1)
 
-    out["bodyfat"] = 1.2 * out["bmi"] + 0.23 * out["age"] - 10.8 * out["ismale"] - 5.4
-    out["ffm"] = out["weightkg"] - out["weightkg"] * out["bodyfat"] * 0.01
+    df["slddessingtype"] = np.nan
+    df.loc[df["Q156_0001"].str.contains("Regular", na=False), "slddessingtype"] = 1
+    df.loc[df["Q156_0001"].str.contains("Reduced-fat", na=False), "slddessingtype"] = 2
+    df.loc[df["Q156_0001"].str.contains("Fat-free", na=False), "slddessingtype"] = 3
+    df["slddessingtype"] = df["slddessingtype"].fillna(1)
 
-    word_to_num = {word: i for i, word in enumerate(["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"], start=1)}
-    out["mealsday"] = out["Q152"].map(word_to_num)
-    out["snacksday"] = out["Q153"].map(word_to_num)
-    out["fasting"] = out["Q154"].map({"No": 0, "Yes": 1})
-    out["skip"] = out["Q155"].map({"No": 0, "Yes": 1})
+    df["Q209"] = df["Q209"].apply(first_numeric_from_string)
+    df["Q210"] = df["Q210"].apply(first_numeric_from_string)
+    df["Q209"] = pd.to_numeric(df["Q209"], errors="coerce")
+    df["Q210"] = pd.to_numeric(df["Q210"], errors="coerce")
 
-    def vegetarian_flags(x):
-        s = "" if pd.isna(x) else str(x)
-        if "I follow a vegan diet" in s:
-            return (1, 1)
-        if "I follow a vegetarian diet" in s:
-            return (1, 0)
-        return (0, 0)
+    df["weightkg"] = df["Q210"] / 2.2
+    df["heightm"] = df["Q209"] * 0.0254
+    df["bmi"] = df["weightkg"] / (df["heightm"] * df["heightm"])
 
-    vv = out["Q157"].apply(vegetarian_flags)
-    out["vegetarian"] = [v[0] for v in vv]
-    out["vegan"] = [v[1] for v in vv]
-    out["restrict"] = np.where(
-        (out["vegetarian"] == 1) | (out["vegan"] == 1),
-        1,
-        np.where((out["Q158"] == "Yes") & (out["Q232"] == "No"), 1, 0),
-    )
-    out["restrictallergy"] = np.where(out["Q232"] == "Yes", 1, 0)
+    df["ismale"] = np.nan
+    df.loc[df["Q230"] == "Female", "ismale"] = 0
+    df.loc[df["Q230"] == "Male", "ismale"] = 1
+    df["gender"] = df["Q230"]
+    df["age"] = pd.to_numeric(df["Q200"], errors="coerce").fillna(0)
 
-    def housing_code(x):
-        s = "" if pd.isna(x) else str(x)
-        if "I live in student housing on campus" in s:
-            return 1
-        if "I live off campus (alone" in s:
-            return 2
-        if "I live off campus with one" in s:
-            return 3
-        if "Other" in s:
-            return 4
-        return np.nan
+    df["runpace"] = np.nan
+    df["runMETS"] = np.nan
+    df.loc[df["Q213"].str.contains("5:30", na=False), ["runpace", "runMETS"]] = [5.5, 16]
+    df.loc[df["Q213"].str.contains("6:00", na=False), ["runpace", "runMETS"]] = [6, 14.5]
+    df.loc[df["Q213"].str.contains("6:30", na=False), ["runpace", "runMETS"]] = [6.5, 12.8]
+    df.loc[df["Q213"].str.contains("7:00", na=False), ["runpace", "runMETS"]] = [7, 12.3]
+    df.loc[df["Q213"].str.contains("7:30", na=False), ["runpace", "runMETS"]] = [7.5, 11.8]
+    df.loc[df["Q213"].str.contains("8:00", na=False), ["runpace", "runMETS"]] = [8, 11.8]
+    df.loc[df["Q213"].str.contains("8:30", na=False), ["runpace", "runMETS"]] = [8.5, 11]
+    df.loc[df["Q213"].str.contains("9:00", na=False), ["runpace", "runMETS"]] = [9, 10.5]
 
-    def foodprep_code(x):
-        s = "" if pd.isna(x) else str(x)
-        if "A family member" in s:
-            return 1
-        if "I am" in s:
-            return 2
-        if "Campus" in s:
-            return 3
-        if "Another" in s:
-            return 4
-        return np.nan
+    df["miles_wk"] = pd.to_numeric(df["Q212"], errors="coerce")
+    df["miles_wk"] = df["miles_wk"].fillna(0)
 
-    out["housing"] = out["Q240"].apply(housing_code)
-    out["foodprep"] = out["Q241"].apply(foodprep_code)
-    out["foodinsecure"] = np.where(out["Q245"].isin(["Often true", "Sometimes true"]), 1, 0)
+    df["runpace"] = df["runpace"].fillna(8)
+    df["runMETS"] = df["runMETS"].fillna(11.8)
+    df["hrsrunning"] = (df["miles_wk"] * df["runpace"]) / 60
 
-    likert = {"Strongly Agree": 1, "Agree": 2, "Disagree": 3, "Strongly Disagree": 4}
-    for src, dest in zip(["Q250", "Q251", "Q252", "Q253", "Q254"], ["percep1", "percep2", "percep3", "percep4", "percep5"]):
-        out[dest] = out[src].map(likert)
+    df["weightliftMETS"] = np.nan
+    df.loc[df["Q215"].str.contains("High", na=False), "weightliftMETS"] = 6
+    df.loc[df["Q215"].str.contains("Moderate", na=False), "weightliftMETS"] = 5
+    df.loc[df["Q215"].str.contains("Low", na=False), "weightliftMETS"] = 3.5
+    df["weightliftMETS"] = df["weightliftMETS"].fillna(5)
 
-    q165 = out["Q165"].fillna("").astype(str)
-    q166 = out["Q166"].fillna("").astype(str)
+    df["aquajogMETS"] = np.nan
+    df.loc[df["Q219"].str.contains("High", na=False), "aquajogMETS"] = 9.8
+    df.loc[df["Q219"].str.contains("Moderate", na=False), "aquajogMETS"] = 6.8
+    df.loc[df["Q219"].str.contains("Low", na=False), "aquajogMETS"] = 4.8
+    df["aquajogMETS"] = df["aquajogMETS"].fillna(6.8)
 
-    out["supp"] = np.where(
-        ((q165 == "I do not take vitamins or minerals.") | (q165 == ".") | (q165 == ""))
-        & ((q166 == "None") | (q166 == ".") | (q166 == "")),
+    df["bikeMETS"] = np.nan
+    df.loc[df["Q224"].str.contains("High", na=False), "bikeMETS"] = 10
+    df.loc[df["Q224"].str.contains("Moderate", na=False), "bikeMETS"] = 8
+    df.loc[df["Q224"].str.contains("Low", na=False), "bikeMETS"] = 6.8
+    df["bikeMETS"] = df["bikeMETS"].fillna(8)
+
+    df["ellipticalMETS"] = np.nan
+    df.loc[df["Q225"].str.contains("High", na=False), "ellipticalMETS"] = 9
+    df.loc[df["Q225"].str.contains("Moderate", na=False), "ellipticalMETS"] = 7
+    df.loc[df["Q225"].str.contains("Low", na=False), "ellipticalMETS"] = 5
+    df["ellipticalMETS"] = df["ellipticalMETS"].fillna(7)
+
+    for col in ["Q70", "Q218", "Q221", "Q223"]:
+        df[col] = df[col].apply(convert_hours_text)
+
+    df["weightlifthrs"] = pd.to_numeric(df["Q70"], errors="coerce").fillna(0)
+    df["aquajoghrs"] = pd.to_numeric(df["Q218"], errors="coerce").fillna(0)
+    df["bikehrs"] = pd.to_numeric(df["Q221"], errors="coerce").fillna(0)
+    df["ellipticalhrs"] = pd.to_numeric(df["Q223"], errors="coerce").fillna(0)
+
+    df["BodyFat"] = 1.2 * df["bmi"] + 0.23 * df["age"] - 10.8 * df["ismale"] - 5.4
+    df["FFM"] = df["weightkg"] - df["weightkg"] * df["BodyFat"] * 0.01
+
+    meals_map = {
+        "One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5,
+        "Six": 6, "Seven": 7, "Eight": 8, "Nine": 9, "Ten": 10
+    }
+    df["Mealsday"] = df["Q152"].map(meals_map)
+    df["SnacksDay"] = df["Q153"].map(meals_map)
+
+    df["Fasting"] = np.nan
+    df.loc[df["Q154"] == "No", "Fasting"] = 0
+    df.loc[df["Q154"] == "Yes", "Fasting"] = 1
+
+    df["Skip"] = np.nan
+    df.loc[df["Q155"] == "No", "Skip"] = 0
+    df.loc[df["Q155"] == "Yes", "Skip"] = 1
+
+    df["Vegetarian"] = np.nan
+    df["Vegan"] = np.nan
+    mask_other = df["Q157"].str.contains("Other \\(please describe\\)", regex=True, na=False)
+    mask_none = df["Q157"].str.contains("I do not follow", na=False)
+    mask_veg = df["Q157"].str.contains("I follow a vegetarian diet", na=False)
+    mask_vegan = df["Q157"].str.contains("I follow a vegan diet", na=False)
+
+    df.loc[mask_other | mask_none, ["Vegetarian", "Vegan"]] = [0, 0]
+    df.loc[mask_veg, ["Vegetarian", "Vegan"]] = [1, 0]
+    df.loc[mask_vegan, ["Vegetarian", "Vegan"]] = [1, 1]
+
+    df["Restrict"] = 0
+    df.loc[(df["Vegetarian"] == 1) | (df["Vegan"] == 1), "Restrict"] = 1
+    df.loc[(df["Q158"] == "Yes") & (df["Q232"] == "No"), "Restrict"] = 1
+
+    df["RestrictAllergy"] = 0
+    df.loc[df["Q232"] == "Yes", "RestrictAllergy"] = 1
+
+    df["Housing"] = np.nan
+    df.loc[df["Q240"].str.contains("I live in student housing on campus", na=False), "Housing"] = 1
+    df.loc[df["Q240"].str.contains("I live off campus \\(alone", regex=True, na=False), "Housing"] = 2
+    df.loc[df["Q240"].str.contains("I live off campus with one", na=False), "Housing"] = 3
+    df.loc[df["Q240"].str.contains("Other", na=False), "Housing"] = 4
+
+    df["FoodPrep"] = np.nan
+    df.loc[df["Q241"].str.contains("A family member", na=False), "FoodPrep"] = 1
+    df.loc[df["Q241"].str.contains("I am", na=False), "FoodPrep"] = 2
+    df.loc[df["Q241"].str.contains("Campus", na=False), "FoodPrep"] = 3
+    df.loc[df["Q241"].str.contains("Another", na=False), "FoodPrep"] = 4
+
+    df["FoodInsecure"] = 0
+    df.loc[(df["Q245"] == "Often true") | (df["Q245"] == "Sometimes true"), "FoodInsecure"] = 1
+
+    df["supp"] = np.where(
+        ((df["Q165"] == "I do not take vitamins or minerals.") | (df["Q165"] == ".")) &
+        ((df["Q166"] == "None") | (df["Q166"] == ".")),
         0,
-        1,
+        1
     )
 
-    def contains_flag(series: pd.Series, text: str) -> pd.Series:
-        return series.str.contains(re.escape(text), case=False, na=False).astype(int)
+    df["vitamin"] = np.where(df["Q165"].str.contains("Multivitamin", na=False), 1, 0)
+    df["vitamind"] = np.where(df["Q165"].str.contains("Vitamin D supplement", na=False), 1, 0)
+    df["iron"] = np.where(df["Q165"].str.contains("Iron", na=False), 1, 0)
+    df["calcium"] = np.where(df["Q165"].str.contains("Calcium", na=False), 1, 0)
+    df["caffeine"] = np.where(df["Q166"].str.contains("Caffeine", na=False), 1, 0)
+    df["creatine"] = np.where(df["Q166"].str.contains("Creatine", na=False), 1, 0)
+    df["prewrkout"] = np.where(df["Q166"].str.contains("Preworkout", na=False), 1, 0)
+    df["WtGainer"] = np.where(df["Q166"].str.contains("gain", na=False), 1, 0)
+    df["WtLosssupp"] = np.where(df["Q166"].str.contains("loss", na=False), 1, 0)
+    df["AAsupp"] = np.where(df["Q166"].str.contains("acids", na=False), 1, 0)
+    df["HerBotSupp"] = np.where(df["Q166"].str.contains("botanicals", na=False), 1, 0)
 
-    out["vitamin"] = contains_flag(q165, "Multivitamin")
-    out["vitamind"] = contains_flag(q165, "Vitamin D supplement")
-    out["iron"] = contains_flag(q165, "Iron")
-    out["calcium"] = contains_flag(q165, "Calcium")
-    out["caffeine"] = contains_flag(q166, "Caffeine")
-    out["creatine"] = contains_flag(q166, "Creatine")
-    out["prewrkout"] = contains_flag(q166, "Preworkout")
-    out["wtgainer"] = contains_flag(q166, "gain")
-    out["wtlosssupp"] = contains_flag(q166, "loss")
-    out["aasupp"] = contains_flag(q166, "acids")
-    out["herbotsupp"] = contains_flag(q166, "botanicals")
-
-    df = df.fillna(0)
-    
-    o = out
-    o["fruitkcal"] = (o["fruits"] * 60) + (o["driedfruit"] * 60) + (o["fruitjuice"] * 120 / 7)
-    o["fruitcho"] = (o["fruits"] * 15) + (o["driedfruit"] * 15) + (o["fruitjuice"] * 30 / 7)
-    o["fruitfiber"] = (o["fruits"] * 2) + (o["driedfruit"] * 2)
-    o["fruit"] = (o["fruits"] / 2) + (o["driedfruit"] / 2) + (o["fruitjuice"] / 7)
-
-    o["coconutwaterkcal"] = o["coconutwater"] * 45 / 7
-    o["coconutwatercho"] = o["coconutwater"] * 10 / 7
-
-    o["vegnskcal"] = (o["vegrlg"] * 25) + (o["vegother"] * 37.5) + ((o["tomsauc"] * 50) / 7) + ((o["tomjuice"] * 50) / 7)
-    o["vegnscho"] = (o["vegrlg"] * 5) + (o["vegother"] * 7.5) + ((o["tomsauc"] * 10) / 7) + ((o["tomjuice"] * 10) / 7)
-    o["vegnspro"] = (o["vegrlg"] * 2) + (o["vegother"] * 3) + ((o["tomsauc"] * 4) / 7) + ((o["tomjuice"] * 4) / 7)
-    o["vegnsfiber"] = (o["vegrlg"] * 2.5) + (o["vegother"] * 4) + ((o["tomsauc"] * 4) / 7) + ((o["tomjuice"] * 4) / 7)
-    o["nsveg"] = (o["vegrlg"] * 0.5) + (o["vegother"] * 1) + ((o["tomsauc"] * 1) / 7) + ((o["tomjuice"] * 1) / 7)
-
-    o["grainkcal"] = (o["plainbrd"] * 80) + (o["bkdbrd"] * 125) + (o["crpast"] * 80) + (o["grnsotr"] * 125)
-    o["graincho"] = (o["plainbrd"] * 15) + (o["bkdbrd"] * 15) + (o["crpast"] * 15) + (o["grnsotr"] * 15)
-    o["grainpro"] = (o["plainbrd"] * 3) + (o["bkdbrd"] * 3) + (o["crpast"] * 3) + (o["grnsotr"] * 3)
-    o["grainfat"] = (o["bkdbrd"] * 5) + (o["grnsotr"] * 5)
-    o["grainfiber"] = (o["plainbrd"] * 1) + (o["bkdbrd"] * 1) + (o["crpast"] * 1) + (o["grnsotr"] * 1)
-    o["grains"] = o["plainbrd"] + o["bkdbrd"] + o["crpast"] + o["grnsotr"]
-
-    o["legumeskcal"] = (o["legumess"] * 100) / 7
-    o["legumescho"] = (o["legumess"] * 15) / 7
-    o["legumespro"] = (o["legumess"] * 6) / 7
-    o["legumesfiber"] = (o["legumess"] * 5) / 7
-    o["legumes"] = o["legumess"] * 0.14 / 2
-
-    o["cornkcal"] = (o["corn"] * 80) / 7
-    o["corncho"] = (o["corn"] * 15) / 7
-    o["cornpro"] = (o["corn"] * 3) / 7
-    o["cornfiber"] = o["corn"] * 1
-
-    o["potatokcal"] = ((o["potatonf"] * 80) / 7) + ((o["potatofr"] * 125) / 7)
-    o["potatocho"] = ((o["potatonf"] * 15) / 7) + ((o["potatofr"] * 15) / 7)
-    o["potatopro"] = ((o["potatonf"] * 3) / 7) + ((o["potatofr"] * 3) / 7)
-    o["potatofat"] = (o["potatofr"] * 5) / 7
-    o["potatofiber"] = ((o["potatonf"] * 1) / 7) + ((o["potatofr"] * 1) / 7)
-    o["potatototal"] = (o["potatonf"] + o["potatofr"]) * 0.14 / 2
-
-    o["vegskcal"] = o["legumeskcal"] + o["cornkcal"] + o["potatokcal"]
-    o["vegscho"] = o["legumescho"] + o["corncho"] + o["potatocho"]
-    o["vegspro"] = o["legumespro"] + o["cornpro"] + o["potatopro"]
-    o["vegsfat"] = o["potatofat"]
-    o["vegsfiber"] = o["legumesfiber"] + o["cornfiber"] + o["potatofiber"]
-    o["starchveg"] = (o["legumes"] + o["corn"] + o["potatonf"] + o["potatofr"]) * 0.14 / 2
-    o["vegall"] = o["nsveg"] + o["starchveg"]
-
-    o["meatpoultrykcal"] = (o["leanmeat"] * 135) / 7 + (o["fatmeat"] * 262.5) / 7
-    o["meatpoultrypro"] = (o["leanmeat"] * 21) / 7 + (o["fatmeat"] * 21) / 7
-    o["meatpoultryfat"] = (o["leanmeat"] * 4.5) / 7 + (o["fatmeat"] * 19.5) / 7
-
-    o["fattyfishkcal"] = (o["ftyfish"] * 195) / 7
-    o["fattyfishpro"] = (o["ftyfish"] * 21) / 7
-    o["fattyfishfat"] = (o["ftyfish"] * 12) / 7
-
-    o["eggskcal"] = (o["whegg"] * 70) / 7 + (o["eggwt"] * 20) / 7
-    o["eggspro"] = (o["whegg"] * 6) / 7 + (o["eggwt"] * 4) / 7
-    o["eggsfat"] = (o["whegg"] * 5) / 7
-
-    o["fttyfish"] = (o["ftyfish"] * 0.143) / 3
-    o["eggs"] = (o["whegg"] * 0.143) + (o["eggwt"] * 0.67) / 7
-    o["mtpltry"] = ((o["leanmeat"] + o["fatmeat"]) * 0.143) / 3
-
-    milk_specs = {
-        1: (90, 12, 8, 1.5, 168, 34, 8, 0),
-        2: (120, 12, 8, 5, 160, 26, 9, 3),
-        3: (150, 12, 8, 8, 208, 26, 8, 8),
-        4: (100, 8, 7, 4, 154, 24, 6, 4),
-        5: (50, 5, 1, 3, 120, 23, 2, 3),
-    }
-    for code, (mk, mc, mp, mf, fk, fc, fp, ff) in milk_specs.items():
-        mask = o["milktype"] == code
-        o.loc[mask, "milkkcal"] = (o.loc[mask, "milk"] * mk) / 7
-        o.loc[mask, "milkcho"] = (o.loc[mask, "milk"] * mc) / 7
-        o.loc[mask, "milkpro"] = (o.loc[mask, "milk"] * mp) / 7
-        o.loc[mask, "milkfat"] = (o.loc[mask, "milk"] * mf) / 7
-        o.loc[mask, "flvmilkkcal"] = (o.loc[mask, "flvmilk"] * fk) / 7
-        o.loc[mask, "flvmilkcho"] = (o.loc[mask, "flvmilk"] * fc) / 7
-        o.loc[mask, "flvmilkpro"] = (o.loc[mask, "flvmilk"] * fp) / 7
-        o.loc[mask, "flvmilkfat"] = (o.loc[mask, "flvmilk"] * ff) / 7
-
-    yog_specs = {
-        1: (120, 16, 11, 0), 2: (150, 17, 13, 4), 3: (150, 11, 9, 8),
-        4: (162, 13, 6, 4), 5: (179, 10, 25, 5), 6: (238, 10, 22, 12),
-    }
-    for code, (k, c, p, f) in yog_specs.items():
-        mask = o["yogtype"] == code
-        o.loc[mask, "yogkcal"] = (o.loc[mask, "yogurt"] * k) / 7
-        o.loc[mask, "yogcho"] = (o.loc[mask, "yogurt"] * c) / 7
-        o.loc[mask, "yogpro"] = (o.loc[mask, "yogurt"] * p) / 7
-        o.loc[mask, "yogfat"] = (o.loc[mask, "yogurt"] * f) / 7
-
-    flvyog_specs = {
-        1: (191, 42, 7, 0), 2: (208, 34, 12, 3), 3: (216, 36, 7, 4), 4: (233, 23, 21, 6), 5: (90, 12, 8, 0),
-    }
-    for code, (k, c, p, f) in flvyog_specs.items():
-        mask = o["flvyogtype"] == code
-        o.loc[mask, "flvyogkcal"] = (o.loc[mask, "flvyogurt"] * k) / 7
-        o.loc[mask, "flvyogcho"] = (o.loc[mask, "flvyogurt"] * c) / 7
-        o.loc[mask, "flvyogpro"] = (o.loc[mask, "flvyogurt"] * p) / 7
-        o.loc[mask, "flvyogfat"] = (o.loc[mask, "flvyogurt"] * f) / 7
-
-    cheese_specs = {1: (100, 7, 8, 0), 2: (75, 7, 5, 0), 3: (74, 3, 6, 3)}
-    for code, (k, p, f, c) in cheese_specs.items():
-        mask = o["cheesetype"] == code
-        o.loc[mask, "cheesekcal"] = (o.loc[mask, "cheese"] * k) / 7
-        o.loc[mask, "cheesepro"] = (o.loc[mask, "cheese"] * p) / 7
-        o.loc[mask, "cheesefat"] = (o.loc[mask, "cheese"] * f) / 7
-        o.loc[mask, "cheesecho"] = (o.loc[mask, "cheese"] * c) / 7
-
-    o["cotcheesekcal"] = (o["cotcheese"] * 180) / 7
-    o["cotcheesepro"] = (o["cotcheese"] * 24) / 7
-    o["cotcheesefat"] = (o["cotcheese"] * 5) / 7
-    o["cotcheesecho"] = (o["cotcheese"] * 10) / 7
-    o["dairy"] = o["milk"] / 7 + o["flvmilk"] / 7 + o["yogurt"] / 7 + o["flvyogurt"] / 7 + o["cheese"] * 0.67 / 7 + o["cotcheese"] * 0.8 / 7
-
-    dressing_specs = {1: (45, 0, 5), 2: (22.5, 0, 2.5), 3: (20, 5, 0)}
-    for code, (k, c, f) in dressing_specs.items():
-        mask = o["slddessingtype"] == code
-        o.loc[mask, "slddrkcal"] = (o.loc[mask, "slddressing"] * k) / 7
-        o.loc[mask, "slddrcho"] = (o.loc[mask, "slddressing"] * c) / 7
-        o.loc[mask, "slddrfat"] = (o.loc[mask, "slddressing"] * f) / 7
-
-    o["vegoilkcal"] = (o["vegoil"] * 135) / 7
-    o["vegoilfat"] = (o["vegoil"] * 15) / 7
-    o["nutbtrkcal"] = (o["nutbtr"] * 94) / 7
-    o["nutbtrpro"] = (o["nutbtr"] * 4) / 7
-    o["nutbtrfat"] = (o["nutbtr"] * 8) / 7
-    o["nutbtrcho"] = (o["nutbtr"] * 3) / 7
-    o["nutbtrfiber"] = (o["nutbtr"] * 1) / 7
-    o["cocoilbtkcal"] = (o["cocoilbt"] * 120) / 7
-    o["cocoilbtfat"] = (o["cocoilbt"] * 14) / 7
-    o["butterkcal"] = (o["butter"] * 102) / 7
-    o["butterfat"] = (o["butter"] * 12) / 7
-    o["lardkcal"] = (o["lard"] * 115) / 7
-    o["lardfat"] = (o["lard"] * 13) / 7
-    o["srcrmkcal"] = (o["srcrm"] * 22.5) / 7
-    o["srcrmfat"] = (o["srcrm"] * 2.5) / 7
-    o["crmchskcal"] = (o["crmchs"] * 45) / 7
-    o["crmchsfat"] = (o["crmchs"] * 5) / 7
-    o["creamkcal"] = (o["cream"] * 45) / 7
-    o["creamfat"] = (o["cream"] * 5) / 7
-    o["mayokcal"] = (o["mayo"] * 94) / 7
-    o["mayofat"] = (o["mayo"] * 10) / 7
-    o["mrgrnekcal"] = (o["mrgrne"] * 103) / 7
-    o["mrgrnefat"] = (o["mrgrne"] * 11) / 7
-    o["hlfhlfkcal"] = (o["hlfhlf"] * 22.5) / 7
-    o["hlfhlffat"] = (o["hlfhlf"] * 2.5) / 7
-    o["oliveskcal"] = (o["olives"] * 10) / 7
-    o["olivesfat"] = (o["olives"] * 1) / 7
-    o["nutskcal"] = (o["nuts"] * 199) / 7
-    o["nutscho"] = (o["nuts"] * 7.3) / 7
-    o["nutspro"] = (o["nuts"] * 6.4) / 7
-    o["nutsfat"] = (o["nuts"] * 17.5) / 7
-    o["nutsfiber"] = (o["nuts"] * 2.1) / 7
-    o["avocadokcal"] = (o["avocado"] * 96) / 7
-    o["avocadocho"] = (o["avocado"] * 5) / 7
-    o["avocadofat"] = (o["avocado"] * 9) / 7
-    o["avocadofiber"] = (o["avocado"] * 3.9) / 7
-    o["avocadopro"] = o["avocado"] * 1 / 7
-
-    o["extrafatskcal"] = o["vegoilkcal"] + o["nutbtrkcal"] + o["cocoilbtkcal"] + o["butterkcal"] + o["lardkcal"] + o["srcrmkcal"] + o["crmchskcal"] + o["creamkcal"] + o["mayokcal"] + o["mrgrnekcal"] + o["hlfhlfkcal"] + o["oliveskcal"] + o["nutskcal"] + o["avocadokcal"]
-    o["extrafatsfat"] = o["vegoilfat"] + o["nutbtrfat"] + o["cocoilbtfat"] + o["butterfat"] + o["lardfat"] + o["srcrmfat"] + o["crmchsfat"] + o["creamfat"] + o["mayofat"] + o["mrgrnefat"] + o["hlfhlffat"] + o["olivesfat"] + o["nutsfat"] + o["avocadofat"]
-    o["extrafatscho"] = o["nutscho"] + o["avocadocho"] + o["nutbtrcho"]
-    o["extrafatsfiber"] = o["nutsfiber"] + o["avocadofiber"] + o["nutbtrfiber"]
-    o["extrafatspro"] = o["nutspro"] + o["nutbtrpro"] + o["avocadopro"]
-
-    o["choccndykcal"] = (o["choccndy"] * 105) / 7
-    o["choccndycho"] = (o["choccndy"] * 15) / 7
-    o["choccndyfat"] = (o["choccndy"] * 5) / 7
-    o["nonchccndykcal"] = (o["nonchccndy"] * 60) / 7
-    o["nonchccndycho"] = (o["nonchccndy"] * 15) / 7
-    o["icecrmkcal"] = (o["icecrm"] * 150) / 7
-    o["icecrmcho"] = (o["icecrm"] * 15) / 7
-    o["icecrmfat"] = (o["icecrm"] * 10) / 7
-    o["froyokcal"] = (o["froyo"] * 105) / 7
-    o["froyocho"] = (o["froyo"] * 15) / 7
-    o["froyofat"] = (o["froyo"] * 5) / 7
-    o["bkdgdkcal"] = (o["bkdgd"] * 105) / 7
-    o["bkdgdcho"] = (o["bkdgd"] * 15) / 7
-    o["bkdgdfat"] = (o["bkdgd"] * 5) / 7
-
-    o["sweetskcal"] = o["choccndykcal"] + o["nonchccndykcal"] + o["icecrmkcal"] + o["froyokcal"] + o["bkdgdkcal"]
-    o["sweetsfat"] = o["choccndyfat"] + o["icecrmfat"] + o["froyofat"] + o["bkdgdfat"]
-    o["sweetscho"] = o["choccndycho"] + o["nonchccndycho"] + o["icecrmcho"] + o["froyocho"] + o["bkdgdcho"]
-
-    o["swtbvgkcal"] = o["swtbvg"] * 120
-    o["swtbvgcho"] = o["swtbvg"] * 30
-    o["swttcfeekcal"] = o["swttcfee"] * 75
-    o["swttcfeecho"] = o["swttcfee"] * 15
-    o["swttcfeepro"] = o["swttcfee"] * 2
-    o["swttcfeefat"] = o["swttcfee"] * 1.5
-    o["nrgdrnkkcal"] = o["nrgdrnk"] * 110
-    o["nrgdrnkcho"] = o["nrgdrnk"] * 29
-    o["otrswtbvgkcal"] = o["otrswtbvg"] * 120
-    o["otrswtbvgcho"] = o["otrswtbvg"] * 30
-    o["chodrnkkcal"] = (o["chodrnk"] * 65) / 7
-    o["chodrnkcho"] = (o["chodrnk"] * 15) / 7
-
-    o["drinkskcal"] = o["swtbvgkcal"] + o["swttcfeekcal"] + o["otrswtbvgkcal"] + o["nrgdrnkkcal"] + o["chodrnkkcal"]
-    o["drinkscho"] = o["swtbvgcho"] + o["swttcfeecho"] + o["otrswtbvgcho"] + o["nrgdrnkcho"] + o["chodrnkcho"]
-    o["drinkspro"] = o["swttcfeepro"]
-    o["drinksfat"] = o["swttcfeefat"]
-
-    o["nrgbarkcal"] = (o["nrgbar"] * 225) / 7
-    o["nrgbarcho"] = (o["nrgbar"] * 35) / 7
-    o["nrgbarpro"] = (o["nrgbar"] * 10) / 7
-    o["nrgbarfat"] = (o["nrgbar"] * 5) / 7
-    o["nrgbarfiber"] = (o["nrgbar"] * 3) / 7
-
-    o["probarkcal"] = (o["probar"] * 250) / 7
-    o["probarcho"] = (o["probar"] * 30) / 7
-    o["probarpro"] = (o["probar"] * 20) / 7
-    o["probarfat"] = (o["probar"] * 7) / 7
-    o["probarfiber"] = (o["probar"] * 2) / 7
-
-    o["gelkcal"] = (o["gel"] * 100) / 7
-    o["gelcho"] = (o["gel"] * 27) / 7
-
-    o["barsgelskcal"] = o["nrgbarkcal"] + o["probarkcal"] + o["gelkcal"]
-    o["barsgelscho"] = o["nrgbarcho"] + o["probarcho"] + o["gelcho"]
-    o["barsgelspro"] = o["nrgbarpro"] + o["probarpro"]
-    o["barsgelsfat"] = o["nrgbarfat"] + o["probarfat"]
-    o["barsgelsfiber"] = o["nrgbarfiber"] + o["probarfiber"]
-    o["gelchewwk"] = o["gel"]
-
-    o["prodrnkkcal"] = (o["prodrnk"] * 286) / 7
-    o["prodrnkcho"] = (o["prodrnk"] * 36) / 7
-    o["prodrnkpro"] = (o["prodrnk"] * 20) / 7
-    o["prodrnkfat"] = (o["prodrnk"] * 8) / 7
-    o["prodrnkfiber"] = (o["prodrnk"] * 4) / 7
-
-    o["nrgkcal"] = o["nrgbarkcal"] + o["probarkcal"] + o["gelkcal"] + o["prodrnkkcal"]
-    o["nrgcho"] = o["nrgbarcho"] + o["probarcho"] + o["gelcho"] + o["prodrnkcho"]
-    o["nrgpro"] = o["nrgbarpro"] + o["probarpro"] + o["prodrnkpro"]
-    o["nrgfat"] = o["nrgbarfat"] + o["probarfat"] + o["prodrnkfat"]
-    o["nrgfiber"] = o["nrgbarfiber"] + o["probarfiber"] + o["prodrnkfiber"]
-
-    o["swtbvgtotal"] = (o["swtbvg"] + o["swttcfee"] + o["otrswtbvg"] + o["nrgdrnk"] + o["chodrnk"]) * 8 / 7
-    o["otrbevtotal"] = (o["zerocaldrnk"] + o["unswttcfee"] + o["water"]) * 8
-    o["prodrnktotal"] = (o["prodrnk"] * 11) / 7
-    o["prodrnkwk"] = o["prodrnk"]
-
-    o["fruitjuicetotal"] = o["fruitjuice"] * 8 / 7
-    o["coconutwatertotal"] = o["coconutwater"] * 8 / 7
-    o["milktotal"] = (o["milk"] + o["flvmilk"]) * 8 / 7
-    o["vegjuicetotal"] = (o["tomjuice"] * 8) / 7
-    o["fluids"] = o["swtbvgtotal"] + o["otrbevtotal"] + o["prodrnktotal"] + o["fruitjuicetotal"] + o["coconutwatertotal"] + o["milktotal"] + o["vegjuicetotal"]
-
-    o["alcoholkcal"] = (o["beer"] * 160 + o["spirits"] * 100 + o["mixed"] * 160 + o["wine"] * 100) / 7
-    o["alcoholcho"] = (o["beer"] * 15 + o["mixed"] * 15) / 7
-
-    o["profoods"] = (o["leanmeat"] * 0.143 / 3) + (o["fatmeat"] * 0.143 / 3) + ((o["ftyfish"] * 0.143) / 3) + (o["whegg"] * 0.143) + (o["eggwt"] * 0.67) / 7 + (o["legumess"] * 0.143)
-
-    o["kcaltotal"] = o["fruitkcal"] + o["vegnskcal"] + o["grainkcal"] + o["vegskcal"] + o["meatpoultrykcal"] + o["fattyfishkcal"] + o["eggskcal"] + o["milkkcal"] + o["flvmilkkcal"] + o["yogkcal"] + o["flvyogkcal"] + o["cheesekcal"] + o["cotcheesekcal"] + o["slddrkcal"] + o["extrafatskcal"] + o["sweetskcal"] + o["nrgkcal"] + o["drinkskcal"] + o["coconutwaterkcal"] + o["alcoholkcal"]
-
-    o["cho"] = o["fruitcho"] + o["vegnscho"] + o["graincho"] + o["vegscho"] + o["milkcho"] + o["flvmilkcho"] + o["yogcho"] + o["flvyogcho"] + o["cheesecho"] + o["slddrcho"] + o["extrafatscho"] + o["sweetscho"] + o["nrgcho"] + o["drinkscho"] + o["coconutwatercho"] + o["alcoholcho"]
-    o["chokg"] = o["cho"] / o["weightkg"]
-
-    o["fat"] = o["grainfat"] + o["vegsfat"] + o["meatpoultryfat"] + o["fattyfishfat"] + o["eggsfat"] + o["milkfat"] + o["flvmilkfat"] + o["yogfat"] + o["flvyogfat"] + o["cheesefat"] + o["cotcheesefat"] + o["slddrfat"] + o["extrafatsfat"] + o["sweetsfat"] + o["drinksfat"] + o["nrgfat"]
-    o["fatkg"] = o["fat"] / o["weightkg"]
-
-    o["pro"] = o["vegnspro"] + o["grainpro"] + o["vegspro"] + o["meatpoultrypro"] + o["fattyfishpro"] + o["eggspro"] + o["milkpro"] + o["flvmilkpro"] + o["yogpro"] + o["flvyogpro"] + o["cheesepro"] + o["cotcheesepro"] + o["extrafatspro"] + o["barsgelspro"] + o["drinkspro"] + o["nrgpro"]
-    o["prokg"] = o["pro"] / o["weightkg"]
-
-    o["fiber"] = o["fruitfiber"] + o["vegnsfiber"] + o["grainfiber"] + o["vegsfiber"] + o["extrafatsfiber"] + o["nrgfiber"]
-
-    o["runkcal"] = (o["weightkg"] * o["runmets"] * o["hrsrunning"]) / 7
-    o["weightliftkcal"] = (o["weightkg"] * o["weightliftmets"] * o["weightlifthrs"]) / 7
-    o["aquajogkcal"] = (o["weightkg"] * o["aquajogmets"] * o["aquajoghrs"]) / 7
-    o["bikekcal"] = (o["weightkg"] * o["bikemets"] * o["bikehrs"]) / 7
-    o["ellipticalkcal"] = (o["weightkg"] * o["ellipticalmets"] * o["ellipticalhrs"]) / 7
-
-    o["eee"] = o["runkcal"] + o["weightliftkcal"] + o["aquajogkcal"] + o["bikekcal"] + o["ellipticalkcal"]
-    o["ea"] = (o["kcaltotal"] - o["eee"]) / o["ffm"]
-    o.loc[o["kcaltotal"] == 0, "ea"] = np.nan
-
-    o["ei"] = o["kcaltotal"]
-    o.loc[o["ei"] == 0, "ei"] = np.nan
-    o["ei_kg"] = o["ei"] / o["weightkg"]
-
-    o["lowea_clinical"] = np.nan
-    o["lowea_subclinical"] = np.nan
-    male_mask = (o["ismale"] == 1) & o["ea"].notna()
-    female_mask = (o["ismale"] == 0) & o["ea"].notna()
-
-    o.loc[male_mask, "lowea_clinical"] = np.where((o.loc[male_mask, "ea"] > 0) & (o.loc[male_mask, "ea"] < 15), 1, 0)
-    o.loc[male_mask, "lowea_subclinical"] = np.where((o.loc[male_mask, "ea"] >= 15) & (o.loc[male_mask, "ea"] < 30), 1, 0)
-    o.loc[female_mask, "lowea_clinical"] = np.where((o.loc[female_mask, "ea"] > 0) & (o.loc[female_mask, "ea"] < 30), 1, 0)
-    o.loc[female_mask, "lowea_subclinical"] = np.where((o.loc[female_mask, "ea"] >= 30) & (o.loc[female_mask, "ea"] < 45), 1, 0)
-
-    o["barswk"] = o["nrgbar"]
-    o["probarswk"] = o["probar"]
-    o["chodrink"] = o["chodrnk"] * 8 / 7
-    o["caffdrnk"] = o["nrgdrnk"] * 8 / 7
-    o["id"] = o["Q182"]
-
-    all_food_missing = out[FOOD_COUNT_VARS].fillna(0).sum(axis=1) == 0
-    if all_food_missing.any():
-        for col in REDCAP_KEEP:
-            if col in o.columns:
-                o.loc[all_food_missing, col] = np.nan
-
-    redcap_df = o[[col for col in REDCAP_KEEP if col in o.columns]].copy()
-    return o.copy(), redcap_df, warnings, df
+    return df
 
 
-def dataframe_to_excel_bytes(sheets: List[Tuple[str, pd.DataFrame]]) -> bytes:
-    output = io.BytesIO()
+def to_excel_bytes(sheets_dict):
+    output = BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        for sheet_name, frame in sheets:
-            frame.to_excel(writer, sheet_name=sheet_name[:31], index=False)
+        for sheet_name, data in sheets_dict.items():
+            data.to_excel(writer, sheet_name=sheet_name[:31], index=False)
     output.seek(0)
     return output.getvalue()
 
 
-st.title("Nutrition FFQ Processor")
-st.write(
-    "Upload a Qualtrics export and this app will process it into the REDCap nutrition dataset from the SAS code. "
-    "Alcohol is included again. If alcohol variables are missing, they are set to 0. "
-    "If Q209 (height in inches)/Q210 (weight in lbs) are missing, the app warns you. Add these columns labeled Q209 and Q210."
-)
+if uploaded_file is not None:
+    raw_df = read_uploaded_file(uploaded_file)
+    raw_df = clean_missing_strings(raw_df)
 
-uploaded_file = st.file_uploader("Upload Qualtrics file", type=["xlsx", "xls", "csv"])
+    missing_hw = ("Q209" not in raw_df.columns) or ("Q210" not in raw_df.columns)
+    if missing_hw:
+        st.warning("Please enter height in inches as variable Q209 and weight in lbs as variable Q210. The app will still calculate everything else.")
+
+    nutrition1 = build_nutrition1(raw_df)
+
+    st.success("Chunk 1 complete: nutrition1 created from the first SAS DATA step.")
+    st.write("nutrition1 preview")
+    st.dataframe(nutrition1.head())
+
+    nutrition1_csv = nutrition1.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        "Download nutrition1.csv",
+        data=nutrition1_csv,
+        file_name="nutrition1.csv",
+        mime="text/csv"
+    )
+
+    nutrition1_xlsx = to_excel_bytes({"nutrition1": nutrition1})
+    st.download_button(
+        "Download nutrition1.xlsx",
+        data=nutrition1_xlsx,
+        file_name="nutrition1.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+# =========================
+# CHUNK 2: nutrition2 + final outputs
+# =========================
+
+def build_nutrition2(nutrition1):
+    df = nutrition1.copy()
+
+    # -------------------------
+    # TOTALS (mirrors SAS sums)
+    # -------------------------
+    df["total_fruit"] = df["fruits"] + df["driedfruit"] + df["fruitjuice"]
+
+    df["total_veg"] = (
+        df["vegrlg"] + df["vegother"] + df["TomSauc"] + df["TomJuice"] +
+        df["Legumess"] + df["Corn"] + df["PotatoNF"]
+    )
+
+    df["total_grains"] = (
+        df["plainbrd"] + df["BkdBrd"] + df["CRPast"] + df["GrnsOtr"]
+    )
+
+    df["total_protein"] = (
+        df["LeanMeat"] + df["FatMeat"] + df["FtyFish"] +
+        df["WhEgg"] + df["EggWt"]
+    )
+
+    df["total_dairy"] = (
+        df["milk"] + df["FlvMilk"] + df["Yogurt"] +
+        df["FlvYogurt"] + df["cheese"] + df["cotcheese"]
+    )
+
+    df["total_fat_sources"] = (
+        df["vegoil"] + df["nutbtr"] + df["CocOilBt"] + df["Butter"] +
+        df["lard"] + df["SrCrm"] + df["CrmChs"] + df["Cream"] +
+        df["Mayo"] + df["Mrgrne"] + df["HlfHlf"] +
+        df["olives"] + df["nuts"] + df["avocado"]
+    )
+
+    df["total_sweets"] = (
+        df["ChocCndy"] + df["NonChcCndy"] + df["IceCrm"] +
+        df["FroYo"] + df["BkdGd"]
+    )
+
+    df["total_sweet_bev"] = (
+        df["SwtBvg"] + df["SwtTCfee"] + df["OtrSwtBvg"] + df["NrgDrnk"]
+    )
+
+    df["total_beverages"] = (
+        df["total_sweet_bev"] +
+        df["coconutwater"] + df["zerocaldrnk"] +
+        df["unSwtTCfee"] + df["water"]
+    )
+
+    df["total_alcohol"] = (
+        df["beer"] + df["spirits"] + df["mixed"] + df["wine"]
+    )
+
+    df["total_sports_nutrition"] = (
+        df["nrgbar"] + df["probar"] + df["chodrnk"] +
+        df["gel"] + df["prodrnk"]
+    )
+
+    # -------------------------
+    # DIET QUALITY / PATTERNS
+    # -------------------------
+    df["plant_foods"] = df["total_fruit"] + df["total_veg"] + df["nuts"] + df["Legumess"]
+    df["animal_foods"] = df["total_protein"] + df["total_dairy"]
+
+    df["ultra_processed"] = (
+        df["total_sweets"] +
+        df["total_sweet_bev"] +
+        df["prodrnk"] +
+        df["gel"]
+    )
+
+    # -------------------------
+    # ACTIVITY ENERGY (METS)
+    # -------------------------
+    df["run_MET_min"] = df["hrsrunning"] * df["runMETS"] * 60
+    df["lift_MET_min"] = df["weightlifthrs"] * df["weightliftMETS"] * 60
+    df["bike_MET_min"] = df["bikehrs"] * df["bikeMETS"] * 60
+    df["elliptical_MET_min"] = df["ellipticalhrs"] * df["ellipticalMETS"] * 60
+    df["aquajog_MET_min"] = df["aquajoghrs"] * df["aquajogMETS"] * 60
+
+    df["total_MET_min"] = (
+        df["run_MET_min"] +
+        df["lift_MET_min"] +
+        df["bike_MET_min"] +
+        df["elliptical_MET_min"] +
+        df["aquajog_MET_min"]
+    )
+
+    # -------------------------
+    # ENERGY NEED ESTIMATE (very literal SAS-style)
+    # -------------------------
+    df["est_cal_need"] = (
+        22 * df["FFM"] + (df["total_MET_min"] / 1440) * df["FFM"]
+    )
+
+    # -------------------------
+    # FINAL FLAGS
+    # -------------------------
+    df["low_energy_flag"] = np.where(
+        df["est_cal_need"] > 0,
+        np.where(df["total_sports_nutrition"] < (0.1 * df["est_cal_need"]), 1, 0),
+        0
+    )
+
+    df["high_sugar_flag"] = np.where(df["total_sweet_bev"] > 7, 1, 0)
+
+    df["low_fruit_veg_flag"] = np.where(
+        (df["total_fruit"] + df["total_veg"]) < 14,
+        1, 0
+    )
+
+    return df
+
+
+# =========================
+# APPLY CHUNK 2
+# =========================
 
 if uploaded_file is not None:
-    try:
-        raw_df = load_input_file(uploaded_file)
-        full_df, redcap_df, warnings_list, cleaned_input = process_nutrition_data(raw_df)
-    except Exception as exc:
-        st.error(f"The file could not be processed: {exc}")
-        st.stop()
 
-    st.success(f"Processed {len(redcap_df)} response(s).")
+    nutrition2 = build_nutrition2(nutrition1)
 
-    if warnings_list:
-        for warning in warnings_list:
-            st.warning(warning)
+    # Final outputs
+    redcapnutrition = nutrition2.copy()
+    allnutrition = nutrition2.copy()
 
-    st.subheader("Input check")
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Rows in uploaded file", len(raw_df))
-    c2.metric("Rows after Qualtrics cleanup", len(cleaned_input))
-    c3.metric("Rows in REDCap output", len(redcap_df))
+    st.success("Chunk 2 complete: nutrition2 + final outputs created.")
 
-    with st.expander("Preview cleaned input"):
-        st.dataframe(cleaned_input.head(10), use_container_width=True)
+    # Show main dataset
+    st.subheader("Redcap Nutrition Output")
+    st.dataframe(redcapnutrition.head())
 
-    st.subheader("REDCap nutrition output")
-    st.dataframe(redcap_df, use_container_width=True)
-
-    st.subheader("Downloads")
-    redcap_csv = redcap_df.to_csv(index=False).encode("utf-8")
-    full_csv = full_df.to_csv(index=False).encode("utf-8")
-    workbook = dataframe_to_excel_bytes([
-        ("redcapnutrition", redcap_df),
-        ("allnutrition", full_df),
-    ])
-
-    d1, d2, d3 = st.columns(3)
-    d1.download_button(
+    # Downloads
+    st.download_button(
         "Download redcapnutrition.csv",
-        data=redcap_csv,
-        file_name="redcapnutrition.csv",
-        mime="text/csv",
+        redcapnutrition.to_csv(index=False),
+        "redcapnutrition.csv"
     )
-    d2.download_button(
+
+    st.download_button(
         "Download allnutrition.csv",
-        data=full_csv,
-        file_name="allnutrition.csv",
-        mime="text/csv",
-    )
-    d3.download_button(
-        "Download Excel workbook",
-        data=workbook,
-        file_name="nutrition_outputs.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        allnutrition.to_csv(index=False),
+        "allnutrition.csv"
     )
