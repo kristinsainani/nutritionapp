@@ -701,7 +701,7 @@ keep_cols = [
     "low_energy_flag","high_sugar_flag","low_fruit_veg_flag"
 ]
 
-keep_cols = [c for c in keep_cols if c in nutrition2.columns]
+keep_cols = [c for c in keep_cols if c in redcapnutrition.columns]
 
 redcapnutrition = nutrition2[keep_cols].copy()
 allnutrition = nutrition2[keep_cols].copy()
