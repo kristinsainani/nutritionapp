@@ -526,21 +526,6 @@ if uploaded_file is not None:
 
     st.success("Chunk 1 complete: nutrition1 created from the first SAS DATA step.")
 
-    nutrition1_csv = nutrition1.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        "Download nutrition1.csv",
-        data=nutrition1_csv,
-        file_name="nutrition1.csv",
-        mime="text/csv"
-    )
-
-    nutrition1_xlsx = to_excel_bytes({"nutrition1": nutrition1})
-    st.download_button(
-        "Download nutrition1.xlsx",
-        data=nutrition1_xlsx,
-        file_name="nutrition1.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
 
 # =========================
 # CHUNK 2: nutrition2 + final outputs
