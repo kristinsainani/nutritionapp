@@ -670,9 +670,28 @@ if uploaded_file is not None:
 
     nutrition2 = build_nutrition2(nutrition1)
 
-    # Final outputs
-    redcapnutrition = nutrition2.copy()
-    allnutrition = nutrition2.copy()
+redcapnutrition = nutrition2[[
+    "fruits","driedfruit","fruitjuice","vegrlg","vegother","TomSauc","TomJuice",
+    "plainbrd","BkdBrd","CRPast","GrnsOtr","Legumess","Corn","PotatoNF",
+    "LeanMeat","FatMeat","FtyFish","WhEgg","EggWt",
+    "milk","FlvMilk","Yogurt","FlvYogurt","cheese","cotcheese",
+    "vegoil","nutbtr","CocOilBt","Butter","lard","SrCrm","CrmChs","Cream",
+    "Mayo","Mrgrne","HlfHlf","olives","nuts","avocado",
+    "ChocCndy","NonChcCndy","IceCrm","FroYo","BkdGd",
+    "SwtBvg","SwtTCfee","OtrSwtBvg","NrgDrnk","coconutwater",
+    "zerocaldrnk","unSwtTCfee","water",
+    "beer","spirits","mixed","wine",
+    "bmi","age","ismale",
+    "total_fruit","total_veg","total_grains","total_protein",
+    "total_dairy","total_fat_sources","total_sweets",
+    "total_sweet_bev","total_beverages","total_alcohol",
+    "total_sports_nutrition",
+    "plant_foods","animal_foods","ultra_processed",
+    "total_MET_min","est_cal_need",
+    "low_energy_flag","high_sugar_flag","low_fruit_veg_flag"
+]].copy()
+
+allnutrition = nutrition2.copy()
 
     st.success("Chunk 2 complete: nutrition2 + final outputs created.")
 
