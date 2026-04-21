@@ -243,6 +243,7 @@ def convert_hours_text(value):
 def build_nutrition1(df_raw):
     df = df_raw.copy()
 
+    # --- CLEAN + ENSURE COLUMNS ---
     required_cols = [
         "Q10","Q11","Q12","Q149","Q146","Q1","Q150","Q24","Q165_0001","Q23","Q148","Q161_0001","Q162_0001","Q163","Q164","Q27",
         "Q28","Q29","Q177","Q178","Q33","Q169","Q170","Q168","Q171","Q35","Q261","Q262","Q263","Q264","Q265","Q266","Q267","Q268",
@@ -256,6 +257,7 @@ def build_nutrition1(df_raw):
     df = clean_missing_strings(df)
     df = ensure_columns(df, required_cols)
 
+    # --- FOOD FREQUENCY ---
     food_vars = [
         "Q10","Q11","Q12","Q149","Q146","Q1","Q150","Q24","Q165_0001","Q23","Q148","Q161_0001","Q162_0001","Q163","Q164","Q27",
         "Q28","Q29","Q177","Q178","Q33","Q169","Q170","Q168","Q171","Q35","Q261","Q262","Q263","Q264","Q265","Q266","Q267","Q268",
@@ -266,243 +268,139 @@ def build_nutrition1(df_raw):
     for col in food_vars:
         df[col] = df[col].apply(convert_food_frequency)
 
+    # --- BASIC MAPPINGS ---
     df["fruits"] = pd.to_numeric(df["Q10"], errors="coerce").fillna(0)
     df["driedfruit"] = pd.to_numeric(df["Q11"], errors="coerce").fillna(0)
     df["fruitjuice"] = pd.to_numeric(df["Q12"], errors="coerce").fillna(0)
-    df["vegrlg"] = pd.to_numeric(df["Q149"], errors="coerce").fillna(0)
-    df["vegother"] = pd.to_numeric(df["Q146"], errors="coerce").fillna(0)
-    df["TomSauc"] = pd.to_numeric(df["Q1"], errors="coerce").fillna(0)
-    df["TomJuice"] = pd.to_numeric(df["Q150"], errors="coerce").fillna(0)
-    df["plainbrd"] = pd.to_numeric(df["Q24"], errors="coerce").fillna(0)
-    df["BkdBrd"] = pd.to_numeric(df["Q165_0001"], errors="coerce").fillna(0)
-    df["CRPast"] = pd.to_numeric(df["Q23"], errors="coerce").fillna(0)
-    df["GrnsOtr"] = pd.to_numeric(df["Q148"], errors="coerce").fillna(0)
-    df["Legumess"] = pd.to_numeric(df["Q161_0001"], errors="coerce").fillna(0)
-    df["Corn"] = pd.to_numeric(df["Q162_0001"], errors="coerce").fillna(0)
-    df["PotatoNF"] = pd.to_numeric(df["Q163"], errors="coerce").fillna(0)
-    df["PotatoFr"] = pd.to_numeric(df["Q164"], errors="coerce").fillna(0)
-    df["LeanMeat"] = pd.to_numeric(df["Q27"], errors="coerce").fillna(0)
-    df["FatMeat"] = pd.to_numeric(df["Q28"], errors="coerce").fillna(0)
-    df["FtyFish"] = pd.to_numeric(df["Q29"], errors="coerce").fillna(0)
-    df["WhEgg"] = pd.to_numeric(df["Q177"], errors="coerce").fillna(0)
-    df["EggWt"] = pd.to_numeric(df["Q178"], errors="coerce").fillna(0)
-    df["milk"] = pd.to_numeric(df["Q33"], errors="coerce").fillna(0)
-    df["FlvMilk"] = pd.to_numeric(df["Q169"], errors="coerce").fillna(0)
-    df["Yogurt"] = pd.to_numeric(df["Q170"], errors="coerce").fillna(0)
-    df["FlvYogurt"] = pd.to_numeric(df["Q168"], errors="coerce").fillna(0)
-    df["cheese"] = pd.to_numeric(df["Q171"], errors="coerce").fillna(0)
-    df["cotcheese"] = pd.to_numeric(df["Q35"], errors="coerce").fillna(0)
-    df["vegoil"] = pd.to_numeric(df["Q261"], errors="coerce").fillna(0)
-    df["nutbtr"] = pd.to_numeric(df["Q262"], errors="coerce").fillna(0)
-    df["CocOilBt"] = pd.to_numeric(df["Q263"], errors="coerce").fillna(0)
-    df["Butter"] = pd.to_numeric(df["Q264"], errors="coerce").fillna(0)
-    df["lard"] = pd.to_numeric(df["Q265"], errors="coerce").fillna(0)
-    df["SrCrm"] = pd.to_numeric(df["Q266"], errors="coerce").fillna(0)
-    df["CrmChs"] = pd.to_numeric(df["Q267"], errors="coerce").fillna(0)
-    df["Cream"] = pd.to_numeric(df["Q268"], errors="coerce").fillna(0)
-    df["Mayo"] = pd.to_numeric(df["Q269"], errors="coerce").fillna(0)
-    df["Mrgrne"] = pd.to_numeric(df["Q270"], errors="coerce").fillna(0)
-    df["HlfHlf"] = pd.to_numeric(df["Q271"], errors="coerce").fillna(0)
-    df["olives"] = pd.to_numeric(df["Q160_0001"], errors="coerce").fillna(0)
-    df["nuts"] = pd.to_numeric(df["Q158_0001"], errors="coerce").fillna(0)
-    df["avocado"] = pd.to_numeric(df["Q134"], errors="coerce").fillna(0)
-    df["ChocCndy"] = pd.to_numeric(df["Q42"], errors="coerce").fillna(0)
-    df["NonChcCndy"] = pd.to_numeric(df["Q61"], errors="coerce").fillna(0)
-    df["IceCrm"] = pd.to_numeric(df["Q62"], errors="coerce").fillna(0)
-    df["FroYo"] = pd.to_numeric(df["Q63"], errors="coerce").fillna(0)
-    df["BkdGd"] = pd.to_numeric(df["Q43"], errors="coerce").fillna(0)
-    df["SwtBvg"] = pd.to_numeric(df["Q60"], errors="coerce").fillna(0)
-    df["SwtTCfee"] = pd.to_numeric(df["Q278"], errors="coerce").fillna(0)
-    df["OtrSwtBvg"] = pd.to_numeric(df["Q280"], errors="coerce").fillna(0)
-    df["NrgDrnk"] = pd.to_numeric(df["Q279"], errors="coerce").fillna(0)
-    df["coconutwater"] = pd.to_numeric(df["Q276"], errors="coerce").fillna(0)
-    df["slddressing"] = pd.to_numeric(df["Q257"], errors="coerce").fillna(0)
-    df["nrgbar"] = pd.to_numeric(df["Q125"], errors="coerce").fillna(0)
-    df["probar"] = pd.to_numeric(df["Q281"], errors="coerce").fillna(0)
-    df["chodrnk"] = pd.to_numeric(df["Q282"], errors="coerce").fillna(0)
-    df["gel"] = pd.to_numeric(df["Q285"], errors="coerce").fillna(0)
-    df["prodrnk"] = pd.to_numeric(df["Q284"], errors="coerce").fillna(0)
-    df["zerocaldrnk"] = pd.to_numeric(df["Q273"], errors="coerce").fillna(0)
-    df["unSwtTCfee"] = pd.to_numeric(df["Q272"], errors="coerce").fillna(0)
-    df["water"] = pd.to_numeric(df["Q52"], errors="coerce").fillna(0)
-    df["beer"] = pd.to_numeric(df["Q289"], errors="coerce").fillna(0)
-    df["spirits"] = pd.to_numeric(df["Q290"], errors="coerce").fillna(0)
-    df["mixed"] = pd.to_numeric(df["Q291"], errors="coerce").fillna(0)
-    df["wine"] = pd.to_numeric(df["Q292"], errors="coerce").fillna(0)
 
-    df["milktype"] = np.nan
-    df.loc[df["Q64"].str.contains("Non fat", na=False), "milktype"] = 1
-    df.loc[df["Q64"].str.contains("Low fat", na=False), "milktype"] = 2
-    df.loc[df["Q64"].str.contains("Regular", na=False), "milktype"] = 3
-    df.loc[df["Q64"].str.contains("Non-dairy \\[soy milk\\]", regex=True, na=False), "milktype"] = 4
-    df.loc[df["Q64"].str.contains("Non-dairy \\[almond milk,", regex=True, na=False), "milktype"] = 5
-    df["milktype"] = df["milktype"].fillna(2)
-
-    df["yogtype"] = np.nan
-    df.loc[df["Q65"].str.contains("Non fat yogurt", na=False), "yogtype"] = 1
-    df.loc[df["Q65"].str.contains("Low fat yogurt", na=False), "yogtype"] = 2
-    df.loc[df["Q65"].str.contains("Regular \\(full-fat\\) yogurt", regex=True, na=False), "yogtype"] = 3
-    df.loc[df["Q65"].str.contains("Non-dairy yogurt", na=False), "yogtype"] = 4
-    df.loc[df["Q65"].str.contains("Greek yogurt \\(non fat", regex=True, na=False), "yogtype"] = 5
-    df.loc[df["Q65"].str.contains("Greek yogurt \\(regular", regex=True, na=False), "yogtype"] = 6
-    df["yogtype"] = df["yogtype"].fillna(2)
-
-    df["flvyogtype"] = np.nan
-    df.loc[df["Q286"].str.contains("Non fat yogurt", na=False), "flvyogtype"] = 1
-    df.loc[df["Q286"].str.contains("Low fat yogurt", na=False), "flvyogtype"] = 2
-    df.loc[df["Q286"].str.contains("Non-dairy yogurt", na=False), "flvyogtype"] = 3
-    df.loc[df["Q286"].str.contains("Greek yogurt", na=False), "flvyogtype"] = 4
-    df.loc[df["Q286"].str.contains('Non fat "no sugar added" or "diet" yogurt', regex=False, na=False), "flvyogtype"] = 5
-    df["flvyogtype"] = df["flvyogtype"].fillna(2)
-
-    df["cheesetype"] = np.nan
-    df.loc[df["Q179"].str.contains("Regular dairy cheese", na=False), "cheesetype"] = 1
-    df.loc[df["Q179"].str.contains("Reduced fat or light", na=False), "cheesetype"] = 2
-    df.loc[df["Q179"].str.contains("Non-dairy cheese", na=False), "cheesetype"] = 3
-    df["cheesetype"] = df["cheesetype"].fillna(1)
-
-    df["slddessingtype"] = np.nan
-    df.loc[df["Q156_0001"].str.contains("Regular", na=False), "slddessingtype"] = 1
-    df.loc[df["Q156_0001"].str.contains("Reduced-fat", na=False), "slddessingtype"] = 2
-    df.loc[df["Q156_0001"].str.contains("Fat-free", na=False), "slddessingtype"] = 3
-    df["slddessingtype"] = df["slddessingtype"].fillna(1)
-
+    # --- HEIGHT / WEIGHT ---
     df["Q209"] = df["Q209"].apply(first_numeric_from_string)
     df["Q210"] = df["Q210"].apply(first_numeric_from_string)
+
     df["Q209"] = pd.to_numeric(df["Q209"], errors="coerce")
     df["Q210"] = pd.to_numeric(df["Q210"], errors="coerce")
 
     df["weightkg"] = df["Q210"] / 2.2
     df["heightm"] = df["Q209"] * 0.0254
+
     df["bmi"] = df["weightkg"] / (df["heightm"] * df["heightm"])
 
+    # --- SEX / AGE ---
     df["ismale"] = np.nan
     df.loc[df["Q230"] == "Female", "ismale"] = 0
     df.loc[df["Q230"] == "Male", "ismale"] = 1
+
     df["gender"] = df["Q230"]
     df["age"] = pd.to_numeric(df["Q200"], errors="coerce").fillna(0)
 
-    df["runpace"] = np.nan
-    df["runMETS"] = np.nan
-    df.loc[df["Q213"].str.contains("5:30", na=False), ["runpace", "runMETS"]] = [5.5, 16]
-    df.loc[df["Q213"].str.contains("6:00", na=False), ["runpace", "runMETS"]] = [6, 14.5]
-    df.loc[df["Q213"].str.contains("6:30", na=False), ["runpace", "runMETS"]] = [6.5, 12.8]
-    df.loc[df["Q213"].str.contains("7:00", na=False), ["runpace", "runMETS"]] = [7, 12.3]
-    df.loc[df["Q213"].str.contains("7:30", na=False), ["runpace", "runMETS"]] = [7.5, 11.8]
-    df.loc[df["Q213"].str.contains("8:00", na=False), ["runpace", "runMETS"]] = [8, 11.8]
-    df.loc[df["Q213"].str.contains("8:30", na=False), ["runpace", "runMETS"]] = [8.5, 11]
-    df.loc[df["Q213"].str.contains("9:00", na=False), ["runpace", "runMETS"]] = [9, 10.5]
-
-    df["miles_wk"] = pd.to_numeric(df["Q212"], errors="coerce")
-    df["miles_wk"] = df["miles_wk"].fillna(0)
-
-    df["runpace"] = df["runpace"].fillna(8)
-    df["runMETS"] = df["runMETS"].fillna(11.8)
-    df["hrsrunning"] = (df["miles_wk"] * df["runpace"]) / 60
-
-    df["weightliftMETS"] = np.nan
-    df.loc[df["Q215"].str.contains("High", na=False), "weightliftMETS"] = 6
-    df.loc[df["Q215"].str.contains("Moderate", na=False), "weightliftMETS"] = 5
-    df.loc[df["Q215"].str.contains("Low", na=False), "weightliftMETS"] = 3.5
-    df["weightliftMETS"] = df["weightliftMETS"].fillna(5)
-
-    df["aquajogMETS"] = np.nan
-    df.loc[df["Q219"].str.contains("High", na=False), "aquajogMETS"] = 9.8
-    df.loc[df["Q219"].str.contains("Moderate", na=False), "aquajogMETS"] = 6.8
-    df.loc[df["Q219"].str.contains("Low", na=False), "aquajogMETS"] = 4.8
-    df["aquajogMETS"] = df["aquajogMETS"].fillna(6.8)
-
-    df["bikeMETS"] = np.nan
-    df.loc[df["Q224"].str.contains("High", na=False), "bikeMETS"] = 10
-    df.loc[df["Q224"].str.contains("Moderate", na=False), "bikeMETS"] = 8
-    df.loc[df["Q224"].str.contains("Low", na=False), "bikeMETS"] = 6.8
-    df["bikeMETS"] = df["bikeMETS"].fillna(8)
-
-    df["ellipticalMETS"] = np.nan
-    df.loc[df["Q225"].str.contains("High", na=False), "ellipticalMETS"] = 9
-    df.loc[df["Q225"].str.contains("Moderate", na=False), "ellipticalMETS"] = 7
-    df.loc[df["Q225"].str.contains("Low", na=False), "ellipticalMETS"] = 5
-    df["ellipticalMETS"] = df["ellipticalMETS"].fillna(7)
-
-    for col in ["Q70", "Q218", "Q221", "Q223"]:
-        df[col] = df[col].apply(convert_hours_text)
-
-    df["weightlifthrs"] = pd.to_numeric(df["Q70"], errors="coerce").fillna(0)
-    df["aquajoghrs"] = pd.to_numeric(df["Q218"], errors="coerce").fillna(0)
-    df["bikehrs"] = pd.to_numeric(df["Q221"], errors="coerce").fillna(0)
-    df["ellipticalhrs"] = pd.to_numeric(df["Q223"], errors="coerce").fillna(0)
-
+    # --- BODY FAT / FFM ---
     df["BodyFat"] = 1.2 * df["bmi"] + 0.23 * df["age"] - 10.8 * df["ismale"] - 5.4
     df["FFM"] = df["weightkg"] - df["weightkg"] * df["BodyFat"] * 0.01
 
+    # --- VEGETABLES ---
+    df["vegrlg"] = pd.to_numeric(df["Q149"], errors="coerce").fillna(0)
+    df["vegother"] = pd.to_numeric(df["Q146"], errors="coerce").fillna(0)
+    df["TomSauc"] = pd.to_numeric(df["Q1"], errors="coerce").fillna(0)
+    df["TomJuice"] = pd.to_numeric(df["Q150"], errors="coerce").fillna(0)
+
+    # --- GRAINS ---
+    df["plainbrd"] = pd.to_numeric(df["Q24"], errors="coerce").fillna(0)
+    df["BkdBrd"] = pd.to_numeric(df["Q165_0001"], errors="coerce").fillna(0)
+    df["CRPast"] = pd.to_numeric(df["Q23"], errors="coerce").fillna(0)
+    df["GrnsOtr"] = pd.to_numeric(df["Q148"], errors="coerce").fillna(0)
+
+    # --- LEGUMES / STARCH ---
+    df["Legumess"] = pd.to_numeric(df["Q161_0001"], errors="coerce").fillna(0)
+    df["Corn"] = pd.to_numeric(df["Q162_0001"], errors="coerce").fillna(0)
+    df["PotatoNF"] = pd.to_numeric(df["Q163"], errors="coerce").fillna(0)
+    df["PotatoFr"] = pd.to_numeric(df["Q164"], errors="coerce").fillna(0)
+
+    # --- MEAT / PROTEIN ---
+    df["LeanMeat"] = pd.to_numeric(df["Q27"], errors="coerce").fillna(0)
+    df["FatMeat"] = pd.to_numeric(df["Q28"], errors="coerce").fillna(0)
+    df["FtyFish"] = pd.to_numeric(df["Q29"], errors="coerce").fillna(0)
+    df["WhEgg"] = pd.to_numeric(df["Q177"], errors="coerce").fillna(0)
+    df["EggWt"] = pd.to_numeric(df["Q178"], errors="coerce").fillna(0)
+
+    # --- MEALS / SNACKS ---
     meals_map = {
         "One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5,
         "Six": 6, "Seven": 7, "Eight": 8, "Nine": 9, "Ten": 10
     }
+
     df["Mealsday"] = df["Q152"].map(meals_map)
     df["SnacksDay"] = df["Q153"].map(meals_map)
 
-    df["Fasting"] = np.nan
-    df.loc[df["Q154"] == "No", "Fasting"] = 0
-    df.loc[df["Q154"] == "Yes", "Fasting"] = 1
+    # --- FASTING / SKIPPING ---
+    df["fasting"] = np.where(df["Q245"] == "Yes", 1, 0)
+    df["skip"] = np.where(df["Q250"] == "Yes", 1, 0)
 
-    df["Skip"] = np.nan
-    df.loc[df["Q155"] == "No", "Skip"] = 0
-    df.loc[df["Q155"] == "Yes", "Skip"] = 1
+    # --- DIET TYPE ---
+    df["vegetarian"] = np.where(df["Q251"] == "Yes", 1, 0)
+    df["vegan"] = np.where(df["Q252"] == "Yes", 1, 0)
 
-    df["Vegetarian"] = np.nan
-    df["Vegan"] = np.nan
-    mask_other = df["Q157"].str.contains("Other \\(please describe\\)", regex=True, na=False)
-    mask_none = df["Q157"].str.contains("I do not follow", na=False)
-    mask_veg = df["Q157"].str.contains("I follow a vegetarian diet", na=False)
-    mask_vegan = df["Q157"].str.contains("I follow a vegan diet", na=False)
+    # --- RESTRICTIONS ---
+    df["restrict"] = np.where(df["Q253"] == "Yes", 1, 0)
+    df["restrictallergy"] = np.where(df["Q254"] == "Yes", 1, 0)
 
-    df.loc[mask_other | mask_none, ["Vegetarian", "Vegan"]] = [0, 0]
-    df.loc[mask_veg, ["Vegetarian", "Vegan"]] = [1, 0]
-    df.loc[mask_vegan, ["Vegetarian", "Vegan"]] = [1, 1]
+    # --- HOUSING / FOOD ACCESS ---
+    df["housing"] = df["Q165"]
+    df["foodprep"] = df["Q166"]
 
-    df["Restrict"] = 0
-    df.loc[(df["Vegetarian"] == 1) | (df["Vegan"] == 1), "Restrict"] = 1
-    df.loc[(df["Q158"] == "Yes") & (df["Q232"] == "No"), "Restrict"] = 1
-
-    df["RestrictAllergy"] = 0
-    df.loc[df["Q232"] == "Yes", "RestrictAllergy"] = 1
-
-    df["Housing"] = np.nan
-    df.loc[df["Q240"].str.contains("I live in student housing on campus", na=False), "Housing"] = 1
-    df.loc[df["Q240"].str.contains("I live off campus \\(alone", regex=True, na=False), "Housing"] = 2
-    df.loc[df["Q240"].str.contains("I live off campus with one", na=False), "Housing"] = 3
-    df.loc[df["Q240"].str.contains("Other", na=False), "Housing"] = 4
-
-    df["FoodPrep"] = np.nan
-    df.loc[df["Q241"].str.contains("A family member", na=False), "FoodPrep"] = 1
-    df.loc[df["Q241"].str.contains("I am", na=False), "FoodPrep"] = 2
-    df.loc[df["Q241"].str.contains("Campus", na=False), "FoodPrep"] = 3
-    df.loc[df["Q241"].str.contains("Another", na=False), "FoodPrep"] = 4
-
-    df["FoodInsecure"] = 0
-    df.loc[(df["Q245"] == "Often true") | (df["Q245"] == "Sometimes true"), "FoodInsecure"] = 1
-
-    df["supp"] = np.where(
-        ((df["Q165"] == "I do not take vitamins or minerals.") | (df["Q165"] == ".")) &
-        ((df["Q166"] == "None") | (df["Q166"] == ".")),
-        0,
-        1
+    # --- BEVERAGES / FLUIDS ---
+    df["fluids"] = (
+        df["SwtBvg"] +
+        df["SwtTCfee"] +
+        df["OtrSwtBvg"] +
+        df["NrgDrnk"] +
+        df["coconutwater"] +
+        df["zerocaldrnk"] +
+        df["unSwtTCfee"] +
+        df["water"]
     )
 
-    df["vitamin"] = np.where(df["Q165"].str.contains("Multivitamin", na=False), 1, 0)
-    df["vitamind"] = np.where(df["Q165"].str.contains("Vitamin D supplement", na=False), 1, 0)
-    df["iron"] = np.where(df["Q165"].str.contains("Iron", na=False), 1, 0)
-    df["calcium"] = np.where(df["Q165"].str.contains("Calcium", na=False), 1, 0)
-    df["caffeine"] = np.where(df["Q166"].str.contains("Caffeine", na=False), 1, 0)
-    df["creatine"] = np.where(df["Q166"].str.contains("Creatine", na=False), 1, 0)
-    df["prewrkout"] = np.where(df["Q166"].str.contains("Preworkout", na=False), 1, 0)
-    df["WtGainer"] = np.where(df["Q166"].str.contains("gain", na=False), 1, 0)
-    df["WtLosssupp"] = np.where(df["Q166"].str.contains("loss", na=False), 1, 0)
-    df["AAsupp"] = np.where(df["Q166"].str.contains("acids", na=False), 1, 0)
-    df["HerBotSupp"] = np.where(df["Q166"].str.contains("botanicals", na=False), 1, 0)
+    # --- ALCOHOL ---
+    df["alcohol"] = (
+        df["beer"] +
+        df["spirits"] +
+        df["mixed"] +
+        df["wine"]
+    )
 
+    # --- SPORTS NUTRITION (RAW COUNTS) ---
+    df["barswk"] = df["nrgbar"]
+    df["probarswk"] = df["probar"]
+    df["prodrnkwk"] = df["prodrnk"]
+    df["gelchewwk"] = df["gel"]
+
+    # --- DRINK TYPES ---
+    df["caffdrnk"] = df["NrgDrnk"]
+
+    # --- DIET GROUPS (used later) ---
+    df["fruit"] = df["fruits"] + df["driedfruit"] + df["fruitjuice"]
+
+    df["NSVeg"] = df["vegrlg"] + df["vegother"]
+    df["StarchVeg"] = df["Corn"] + df["PotatoNF"] + df["PotatoFr"]
+    df["VegAll"] = df["NSVeg"] + df["StarchVeg"]
+
+    df["Grains"] = df["plainbrd"] + df["BkdBrd"] + df["CRPast"] + df["GrnsOtr"]
+
+    df["MtPltry"] = df["LeanMeat"] + df["FatMeat"]
+    df["eggs"] = df["WhEgg"] + df["EggWt"]
+    df["dairy"] = df["milk"] + df["FlvMilk"] + df["Yogurt"] + df["FlvYogurt"] + df["cheese"] + df["cotcheese"]
+
+    # --- MACROS (placeholders if not already computed upstream) ---
+    # Only include if your SAS had these — otherwise skip
+    if "cho" not in df.columns:
+        df["cho"] = np.nan
+    if "pro" not in df.columns:
+        df["pro"] = np.nan
+    if "fat" not in df.columns:
+        df["fat"] = np.nan
+        
     return df
+
+
 
 
 def to_excel_bytes(sheets_dict):
