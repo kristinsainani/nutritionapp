@@ -670,14 +670,48 @@ if uploaded_file is not None:
     nutrition2 = build_nutrition2(nutrition1)
 
     # Final outputs
-    redcapnutrition = nutrition2.copy()
-    allnutrition = nutrition2.copy()
+keep_cols = [
+    "fruits","driedfruit","fruitjuice","vegrlg","vegother","TomSauc","TomJuice",
+    "plainbrd","BkdBrd","CRPast","GrnsOtr","Legumess","Corn","PotatoNF","PotatoFr",
+    "LeanMeat","FatMeat","FtyFish","WhEgg","EggWt",
+    "milk","FlvMilk","Yogurt","FlvYogurt","cheese","cotcheese",
+    "vegoil","nutbtr","CocOilBt","Butter","lard","SrCrm","CrmChs","Cream",
+    "Mayo","Mrgrne","HlfHlf","olives","nuts","avocado",
+    "ChocCndy","NonChcCndy","IceCrm","FroYo","BkdGd",
+    "SwtBvg","SwtTCfee","OtrSwtBvg","NrgDrnk","coconutwater",
+    "slddressing","nrgbar","probar","chodrnk","gel","prodrnk",
+    "zerocaldrnk","unSwtTCfee","water",
+    "beer","spirits","mixed","wine",
+    "milktype","yogtype","flvyogtype","cheesetype","slddessingtype",
+    "weightkg","heightm","bmi","ismale","gender","age",
+    "runpace","runMETS","miles_wk","hrsrunning",
+    "weightliftMETS","aquajogMETS","bikeMETS","ellipticalMETS",
+    "weightlifthrs","aquajoghrs","bikehrs","ellipticalhrs",
+    "BodyFat","FFM","Mealsday","SnacksDay","Fasting","Skip",
+    "Vegetarian","Vegan","Restrict","RestrictAllergy",
+    "Housing","FoodPrep","FoodInsecure",
+    "supp","vitamin","vitamind","iron","calcium","caffeine","creatine",
+    "prewrkout","WtGainer","WtLosssupp","AAsupp","HerBotSupp",
+    "total_fruit","total_veg","total_grains","total_protein","total_dairy",
+    "total_fat_sources","total_sweets","total_sweet_bev","total_beverages",
+    "total_alcohol","total_sports_nutrition",
+    "plant_foods","animal_foods","ultra_processed",
+    "run_MET_min","lift_MET_min","bike_MET_min","elliptical_MET_min","aquajog_MET_min",
+    "total_MET_min","est_cal_need",
+    "low_energy_flag","high_sugar_flag","low_fruit_veg_flag"
+]
+
+keep_cols = [c for c in keep_cols if c in nutrition2.columns]
+
+redcapnutrition = nutrition2[keep_cols].copy()
+allnutrition = nutrition2[keep_cols].copy()
 
     st.success("Chunk 2 complete: nutrition2 + final outputs created.")
 
     # Show main dataset
     st.subheader("Redcap Nutrition Output")
     st.dataframe(redcapnutrition.head())
+    st.write(redcapnutrition.columns.tolist())
     
     # Downloads
     st.download_button(
