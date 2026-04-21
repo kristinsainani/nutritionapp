@@ -672,17 +672,16 @@ def build_nutrition2(nutrition1):
     df["prokg"] = df["pro"] / df["weightkg"]
     df["fatkg"] = df["fat"] / df["weightkg"]
 
-met_cols = [
-    "run_MET_min",
-    "lift_MET_min",
-    "bike_MET_min",
-    "elliptical_MET_min",
-    "aquajog_MET_min"
-]
+    met_cols = [
+        "run_MET_min",
+        "lift_MET_min",
+        "bike_MET_min",
+        "elliptical_MET_min",
+        "aquajog_MET_min"
+    ]
 
-df["EEE"] = df[[c for c in met_cols if c in df.columns]].sum(axis=1) / 60
+    df["EEE"] = df[[c for c in met_cols if c in df.columns]].sum(axis=1) / 60
 
-    # --- ENERGY INTAKE / AVAILABILITY ---
     df["EI"] = df["kcaltotal"]
     df.loc[df["EI"] == 0, "EI"] = np.nan
 
@@ -691,11 +690,9 @@ df["EEE"] = df[[c for c in met_cols if c in df.columns]].sum(axis=1) / 60
     df["EA"] = (df["kcaltotal"] - df["EEE"]) / df["FFM"]
     df.loc[df["kcaltotal"] == 0, "EA"] = np.nan
 
-    # --- LOW ENERGY FLAGS ---
     df["LowEA_clinical"] = np.where(df["EA"] < 30, 1, 0)
     df["LowEA_subclinical"] = np.where((df["EA"] >= 30) & (df["EA"] < 45), 1, 0)
 
-    # --- WEEKLY CONVERSIONS ---
     df["barswk"] = df["nrgbar"]
     df["probarswk"] = df["probar"]
     df["prodrnkwk"] = df["prodrnk"]
@@ -704,7 +701,6 @@ df["EEE"] = df[[c for c in met_cols if c in df.columns]].sum(axis=1) / 60
     df["chodrnk"] = df["chodrnk"] * 8 / 7
     df["caffdrnk"] = df["NrgDrnk"] * 8 / 7
 
-    # --- ID (EXACT SAS) ---
     df["id"] = df["Q182"]
 
     return df
