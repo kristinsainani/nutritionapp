@@ -525,8 +525,6 @@ if uploaded_file is not None:
     nutrition1 = build_nutrition1(raw_df)
 
     st.success("Chunk 1 complete: nutrition1 created from the first SAS DATA step.")
-    st.write("nutrition1 preview")
-    st.dataframe(nutrition1.head())
 
     nutrition1_csv = nutrition1.to_csv(index=False).encode("utf-8")
     st.download_button(
