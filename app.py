@@ -710,8 +710,8 @@ st.success("Chunk 2 complete: nutrition2 + final outputs created.")
 
     # Show main dataset
 st.subheader("Redcap Nutrition Output")
-    st.dataframe(redcapnutrition.head())
-    st.write(redcapnutrition.columns.tolist())
+st.dataframe(redcapnutrition.head())
+st.write(redcapnutrition.columns.tolist())
     
     # Downloads
     st.download_button(
