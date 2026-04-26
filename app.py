@@ -307,6 +307,32 @@ def process_dairy_types(df):
 
     return df
 
+def process_body_metrics(df):
+    df = df.copy()
+
+    # ---- Extract numeric values (like SAS scan/compress) ----
+    df["Q209_num"] = df["Q209"].apply(first_numeric_from_string)  # height
+    df["Q210_num"] = df["Q210"].apply(first_numeric_from_string)  # weight
+
+    # ---- Convert units ----
+    df["weightkg"] = df["Q210_num"] / 2.2
+    df["heightm"] = df["Q209_num"] * 0.0254
+
+    # ---- BMI ----
+    df["bmi"] = df["weightkg"] / (df["heightm"] ** 2)
+
+    # ---- Gender ----
+    df["ismale"] = np.nan
+    df.loc[df["Q230"] == "Female", "ismale"] = 0
+    df.loc[df["Q230"] == "Male", "ismale"] = 1
+
+    df["gender"] = df["Q230"]
+
+    # ---- Age ----
+    df["age"] = pd.to_numeric(df["Q200"], errors="coerce")
+
+    return df
+
 if uploaded_file is not None:
     df = read_uploaded_file(uploaded_file)
     df = normalize_qualtrics_columns(df)
@@ -314,10 +340,10 @@ if uploaded_file is not None:
     df = process_servings(df)
     df = create_food_variables(df)
     df = process_dairy_types(df)
+    df = process_body_metrics(df)
 
     st.write("Preview of uploaded data:")
     st.dataframe(df.head())
-
 
 
 
