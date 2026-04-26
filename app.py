@@ -168,72 +168,79 @@ def process_servings(df):
 
 
 
+
 def create_food_variables(df):
     df = df.copy()
 
-    df["fruits"] = df["Q10"]
-    df["driedfruit"] = df["Q11"]
-    df["fruitjuice"] = df["Q12"]
-    df["vegrlg"] = df["Q149"]
-    df["vegother"] = df["Q146"]
-    df["TomSauc"] = df["Q1"]
-    df["TomJuice"] = df["Q150"]
-    df["plainbrd"] = df["Q24"]
-    df["BkdBrd"] = df["Q165_0001"]
-    df["CRPast"] = df["Q23"]
-    df["GrnsOtr"] = df["Q148"]
-    df["Legumess"] = df["Q161_0001"]
-    df["Corn"] = df["Q162_0001"]
-    df["PotatoNF"] = df["Q163"]
-    df["PotatoFr"] = df["Q164"]
-    df["LeanMeat"] = df["Q27"]
-    df["FatMeat"] = df["Q28"]
-    df["FtyFish"] = df["Q29"]
-    df["WhEgg"] = df["Q177"]
-    df["EggWt"] = df["Q178"]
-    df["milk"] = df["Q33"]
-    df["FlvMilk"] = df["Q169"]
-    df["Yogurt"] = df["Q170"]
-    df["FlvYogurt"] = df["Q168"]
-    df["cheese"] = df["Q171"]
-    df["cotcheese"] = df["q35"]
-    df["vegoil"] = df["Q261"]
-    df["nutbtr"] = df["Q262"]
-    df["CocOilBt"] = df["Q263"]
-    df["Butter"] = df["Q264"]
-    df["lard"] = df["Q265"]
-    df["SrCrm"] = df["Q266"]
-    df["CrmChs"] = df["Q267"]
-    df["Cream"] = df["Q268"]
-    df["Mayo"] = df["Q269"]
-    df["Mrgrne"] = df["Q270"]
-    df["HlfHlf"] = df["Q271"]
-    df["olives"] = df["Q160_0001"]
-    df["nuts"] = df["Q158_0001"]
-    df["avocado"] = df["Q134"]
-    df["ChocCndy"] = df["Q42"]
-    df["NonChcCndy"] = df["Q61"]
-    df["IceCrm"] = df["Q62"]
-    df["FroYo"] = df["Q63"]
-    df["BkdGd"] = df["Q43"]
-    df["SwtBvg"] = df["Q60"]
-    df["SwtTCfee"] = df["Q278"]
-    df["OtrSwtBvg"] = df["Q280"]
-    df["NrgDrnk"] = df["Q279"]
-    df["coconutwater"] = df["Q276"]
-    df["slddressing"] = df["Q257"]
-    df["nrgbar"] = df["Q125"]
-    df["probar"] = df["Q281"]
-    df["chodrnk"] = df["Q282"]
-    df["gel"] = df["Q285"]
-    df["prodrnk"] = df["Q284"]
-    df["zerocaldrnk"] = df["Q273"]
-    df["unSwtTCfee"] = df["Q272"]
-    df["water"] = df["Q52"]
-    df["beer"] = df["Q289"]
-    df["spirits"] = df["Q290"]
-    df["mixed"] = df["Q291"]
-    df["wine"] = df["Q292"]
+    def safe_assign(new_col, old_col):
+        if old_col in df.columns:
+            df[new_col] = df[old_col]
+        else:
+            df[new_col] = 0
+
+    safe_assign("fruits", "Q10")
+    safe_assign("driedfruit", "Q11")
+    safe_assign("fruitjuice", "Q12")
+    safe_assign("vegrlg", "Q149")
+    safe_assign("vegother", "Q146")
+    safe_assign("TomSauc", "Q1")
+    safe_assign("TomJuice", "Q150")
+    safe_assign("plainbrd", "Q24")
+    safe_assign("BkdBrd", "Q165_0001")
+    safe_assign("CRPast", "Q23")
+    safe_assign("GrnsOtr", "Q148")
+    safe_assign("Legumess", "Q161_0001")
+    safe_assign("Corn", "Q162_0001")
+    safe_assign("PotatoNF", "Q163")
+    safe_assign("PotatoFr", "Q164")
+    safe_assign("LeanMeat", "Q27")
+    safe_assign("FatMeat", "Q28")
+    safe_assign("FtyFish", "Q29")
+    safe_assign("WhEgg", "Q177")
+    safe_assign("EggWt", "Q178")
+    safe_assign("milk", "Q33")
+    safe_assign("FlvMilk", "Q169")
+    safe_assign("Yogurt", "Q170")
+    safe_assign("FlvYogurt", "Q168")
+    safe_assign("cheese", "Q171")
+    safe_assign("cotcheese", "q35")
+    safe_assign("vegoil", "Q261")
+    safe_assign("nutbtr", "Q262")
+    safe_assign("CocOilBt", "Q263")
+    safe_assign("Butter", "Q264")
+    safe_assign("lard", "Q265")
+    safe_assign("SrCrm", "Q266")
+    safe_assign("CrmChs", "Q267")
+    safe_assign("Cream", "Q268")
+    safe_assign("Mayo", "Q269")
+    safe_assign("Mrgrne", "Q270")
+    safe_assign("HlfHlf", "Q271")
+    safe_assign("olives", "Q160_0001")
+    safe_assign("nuts", "Q158_0001")
+    safe_assign("avocado", "Q134")
+    safe_assign("ChocCndy", "Q42")
+    safe_assign("NonChcCndy", "Q61")
+    safe_assign("IceCrm", "Q62")
+    safe_assign("FroYo", "Q63")
+    safe_assign("BkdGd", "Q43")
+    safe_assign("SwtBvg", "Q60")
+    safe_assign("SwtTCfee", "Q278")
+    safe_assign("OtrSwtBvg", "Q280")
+    safe_assign("NrgDrnk", "Q279")
+    safe_assign("coconutwater", "Q276")
+    safe_assign("slddressing", "Q257")
+    safe_assign("nrgbar", "Q125")
+    safe_assign("probar", "Q281")
+    safe_assign("chodrnk", "Q282")
+    safe_assign("gel", "Q285")
+    safe_assign("prodrnk", "Q284")
+    safe_assign("zerocaldrnk", "Q273")
+    safe_assign("unSwtTCfee", "Q272")
+    safe_assign("water", "Q52")
+    safe_assign("beer", "Q289")
+    safe_assign("spirits", "Q290")
+    safe_assign("mixed", "Q291")
+    safe_assign("wine", "Q292")
 
     return df
 
