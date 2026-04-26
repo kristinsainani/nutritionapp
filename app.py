@@ -166,15 +166,86 @@ def process_servings(df):
 
     return df
 
+
+
+def create_food_variables(df):
+    df = df.copy()
+
+    df["fruits"] = df["Q10"]
+    df["driedfruit"] = df["Q11"]
+    df["fruitjuice"] = df["Q12"]
+    df["vegrlg"] = df["Q149"]
+    df["vegother"] = df["Q146"]
+    df["TomSauc"] = df["Q1"]
+    df["TomJuice"] = df["Q150"]
+    df["plainbrd"] = df["Q24"]
+    df["BkdBrd"] = df["Q165_0001"]
+    df["CRPast"] = df["Q23"]
+    df["GrnsOtr"] = df["Q148"]
+    df["Legumess"] = df["Q161_0001"]
+    df["Corn"] = df["Q162_0001"]
+    df["PotatoNF"] = df["Q163"]
+    df["PotatoFr"] = df["Q164"]
+    df["LeanMeat"] = df["Q27"]
+    df["FatMeat"] = df["Q28"]
+    df["FtyFish"] = df["Q29"]
+    df["WhEgg"] = df["Q177"]
+    df["EggWt"] = df["Q178"]
+    df["milk"] = df["Q33"]
+    df["FlvMilk"] = df["Q169"]
+    df["Yogurt"] = df["Q170"]
+    df["FlvYogurt"] = df["Q168"]
+    df["cheese"] = df["Q171"]
+    df["cotcheese"] = df["q35"]
+    df["vegoil"] = df["Q261"]
+    df["nutbtr"] = df["Q262"]
+    df["CocOilBt"] = df["Q263"]
+    df["Butter"] = df["Q264"]
+    df["lard"] = df["Q265"]
+    df["SrCrm"] = df["Q266"]
+    df["CrmChs"] = df["Q267"]
+    df["Cream"] = df["Q268"]
+    df["Mayo"] = df["Q269"]
+    df["Mrgrne"] = df["Q270"]
+    df["HlfHlf"] = df["Q271"]
+    df["olives"] = df["Q160_0001"]
+    df["nuts"] = df["Q158_0001"]
+    df["avocado"] = df["Q134"]
+    df["ChocCndy"] = df["Q42"]
+    df["NonChcCndy"] = df["Q61"]
+    df["IceCrm"] = df["Q62"]
+    df["FroYo"] = df["Q63"]
+    df["BkdGd"] = df["Q43"]
+    df["SwtBvg"] = df["Q60"]
+    df["SwtTCfee"] = df["Q278"]
+    df["OtrSwtBvg"] = df["Q280"]
+    df["NrgDrnk"] = df["Q279"]
+    df["coconutwater"] = df["Q276"]
+    df["slddressing"] = df["Q257"]
+    df["nrgbar"] = df["Q125"]
+    df["probar"] = df["Q281"]
+    df["chodrnk"] = df["Q282"]
+    df["gel"] = df["Q285"]
+    df["prodrnk"] = df["Q284"]
+    df["zerocaldrnk"] = df["Q273"]
+    df["unSwtTCfee"] = df["Q272"]
+    df["water"] = df["Q52"]
+    df["beer"] = df["Q289"]
+    df["spirits"] = df["Q290"]
+    df["mixed"] = df["Q291"]
+    df["wine"] = df["Q292"]
+
+    return df
+
 if uploaded_file is not None:
     df = read_uploaded_file(uploaded_file)
     df = normalize_qualtrics_columns(df)
 
     df = process_servings(df)
+    df = create_food_variables(df)
 
     st.write("Preview of uploaded data:")
     st.dataframe(df.head())
-
 
 
 
