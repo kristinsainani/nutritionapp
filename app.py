@@ -578,19 +578,19 @@ def process_behavior_and_supplements(df):
     s = get_series("Q240")
 
     df["housing"] = np.nan
-    df.loc[s.str.contains("I live in student housing on campus", na=False), "housing"] = 1
-    df.loc[s.str.contains("I live off campus (alone", na=False), "housing"] = 2
-    df.loc[s.str.contains("I live off campus with one", na=False), "housing"] = 3
-    df.loc[s.str.contains("Other", na=False), "housing"] = 4
-
+    df.loc[s.str.contains("I live in student housing on campus", na=False, regex=False), "housing"] = 1
+    df.loc[s.str.contains("I live off campus (alone", na=False, regex=False), "housing"] = 2
+    df.loc[s.str.contains("I live off campus with one", na=False, regex=False), "housing"] = 3
+    df.loc[s.str.contains("Other", na=False, regex=False), "housing"] = 4
+   
     # ---- Food prep ----
     s = get_series("Q241")
 
     df["foodprep"] = np.nan
-    df.loc[s.str.contains("A family member", na=False), "foodprep"] = 1
-    df.loc[s.str.contains("I am", na=False), "foodprep"] = 2
-    df.loc[s.str.contains("Campus", na=False), "foodprep"] = 3
-    df.loc[s.str.contains("Another", na=False), "foodprep"] = 4
+    df.loc[s.str.contains("A family member", na=False, regex=False), "foodprep"] = 1
+    df.loc[s.str.contains("I am", na=False, regex=False), "foodprep"] = 2
+    df.loc[s.str.contains("Campus", na=False, regex=False), "foodprep"] = 3
+    df.loc[s.str.contains("Another", na=False, regex=False), "foodprep"] = 4
 
     # ---- Food insecurity ----
     s = get_series("Q245")
