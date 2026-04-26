@@ -291,15 +291,13 @@ def create_food_variables(df):
     safe_assign("wine", "Q292")
 
     return df
-
 def process_dairy_types(df):
     df = df.copy()
 
     def get_series(col):
         if col in df.columns:
             return df[col].astype(str)
-        else:
-            return pd.Series([""] * len(df))
+        return pd.Series([""] * len(df), index=df.index)
 
     # ---- MILK ----
     s = get_series("Q64")
@@ -308,9 +306,8 @@ def process_dairy_types(df):
     df.loc[s.str.contains("Non fat", na=False, regex=False), "milktype"] = 1
     df.loc[s.str.contains("Low fat", na=False, regex=False), "milktype"] = 2
     df.loc[s.str.contains("Regular", na=False, regex=False), "milktype"] = 3
-    df.loc[s.str.contains("soy milk", na=False, regex=False), "milktype"] = 4
-    df.loc[s.str.contains("almond milk", na=False, regex=False), "milktype"] = 5
-
+    df.loc[s.str.contains("Non-dairy [soy milk]", na=False, regex=False), "milktype"] = 4
+    df.loc[s.str.contains("Non-dairy [almond milk,", na=False, regex=False), "milktype"] = 5
     df["milktype"] = df["milktype"].fillna(2)
 
     # ---- PLAIN YOGURT ----
@@ -323,7 +320,6 @@ def process_dairy_types(df):
     df.loc[s.str.contains("Non-dairy yogurt", na=False, regex=False), "yogtype"] = 4
     df.loc[s.str.contains("Greek yogurt (non fat", na=False, regex=False), "yogtype"] = 5
     df.loc[s.str.contains("Greek yogurt (regular", na=False, regex=False), "yogtype"] = 6
-
     df["yogtype"] = df["yogtype"].fillna(2)
 
     # ---- FLAVORED YOGURT ----
@@ -334,8 +330,7 @@ def process_dairy_types(df):
     df.loc[s.str.contains("Low fat yogurt", na=False, regex=False), "flvyogtype"] = 2
     df.loc[s.str.contains("Non-dairy yogurt", na=False, regex=False), "flvyogtype"] = 3
     df.loc[s.str.contains("Greek yogurt", na=False, regex=False), "flvyogtype"] = 4
-    df.loc[s.str.contains("no sugar added", na=False, regex=False), "flvyogtype"] = 5
-
+    df.loc[s.str.contains('Non fat "no sugar added" or "diet" yogurt', na=False, regex=False), "flvyogtype"] = 5
     df["flvyogtype"] = df["flvyogtype"].fillna(2)
 
     # ---- CHEESE ----
@@ -343,10 +338,8 @@ def process_dairy_types(df):
 
     df["cheesetype"] = np.nan
     df.loc[s.str.contains("Regular dairy cheese", na=False, regex=False), "cheesetype"] = 1
-    df.loc[s.str.contains("Reduced fat", na=False, regex=False) | 
-           s.str.contains("light", na=False, regex=False), "cheesetype"] = 2
+    df.loc[s.str.contains("Reduced fat or light", na=False, regex=False), "cheesetype"] = 2
     df.loc[s.str.contains("Non-dairy cheese", na=False, regex=False), "cheesetype"] = 3
-
     df["cheesetype"] = df["cheesetype"].fillna(1)
 
     # ---- SALAD DRESSING ----
@@ -354,9 +347,8 @@ def process_dairy_types(df):
 
     df["slddessingtype"] = np.nan
     df.loc[s.str.contains("Regular", na=False, regex=False), "slddessingtype"] = 1
-    df.loc[s.str.contains("Reduced", na=False, regex=False), "slddessingtype"] = 2
+    df.loc[s.str.contains("Reduced-fat", na=False, regex=False), "slddessingtype"] = 2
     df.loc[s.str.contains("Fat-free", na=False, regex=False), "slddessingtype"] = 3
-
     df["slddessingtype"] = df["slddessingtype"].fillna(1)
 
     return df
@@ -366,34 +358,37 @@ def process_body_metrics(df):
 
     def clean_numeric(col):
         if col in df.columns:
-            return (
-                df[col]
-                .astype(str)
-                .str.replace(r"[^0-9\-]", "", regex=True)  # keep digits and dash
-                .str.split("-")
-                .str[0]  # take first value if range
-                .astype(float)
-            )
+            s = df[col].astype(str)
+
+            # Extract FIRST numeric value (matches SAS scan behavior)
+            out = s.str.extract(r"(\d+)")[0]
+
+            return pd.to_numeric(out, errors="coerce")
         else:
             return pd.Series(np.nan, index=df.index)
 
-    # Clean inputs
+    # ---- CLEAN INPUTS ----
     height_in = clean_numeric("Q209")
     weight_lb = clean_numeric("Q210")
 
-    # Convert units
+    # ---- CONVERT UNITS ----
     df["weightkg"] = weight_lb / 2.2
     df["heightm"] = height_in * 0.0254
 
-    # BMI
+    # ---- BMI ----
     df["bmi"] = df["weightkg"] / (df["heightm"] ** 2)
 
-    # Gender
-    df["gender"] = df["Q230"]
-    df["ismale"] = np.where(df["Q230"] == "Male", 1,
-                     np.where(df["Q230"] == "Female", 0, np.nan))
+    # ---- GENDER ----
+    gender = df["Q230"].astype(str).str.strip().str.upper()
 
-    # Age
+    df["gender"] = df["Q230"]
+
+    df["ismale"] = np.where(
+        gender == "MALE", 1,
+        np.where(gender == "FEMALE", 0, np.nan)
+    )
+
+    # ---- AGE ----
     df["age"] = pd.to_numeric(df["Q200"], errors="coerce")
 
     return df
@@ -407,19 +402,103 @@ def process_exercise(df):
         else:
             return pd.Series(0, index=df.index)
 
-    # ---- HOURS / WEEK (MATCHES SAS EXACTLY) ----
-    df["hrsrunning"] = num("Q70")
-    df["weightlifthrs"] = num("Q218")
-    df["aquajoghrs"] = num("Q221")
-    df["bikehrs"] = num("Q223")
-    df["ellipticalhrs"] = num("Q223")
+    # ---- RUN PACE + METS ----
+    s = df["Q213"].astype(str)
 
-    # ---- METS (constants; SAS-style) ----
-    df["runmets"] = 9.8
-    df["weightliftmets"] = 6.0
-    df["aquajogmets"] = 4.0
-    df["bikemets"] = 7.5
-    df["ellipticalmets"] = 5.0
+    df["runpace"] = np.nan
+    df["runMETS"] = np.nan
+
+    df.loc[s.str.contains("5:30", na=False), ["runpace","runMETS"]] = [5.5, 16]
+    df.loc[s.str.contains("6:00", na=False), ["runpace","runMETS"]] = [6.0, 14.5]
+    df.loc[s.str.contains("6:30", na=False), ["runpace","runMETS"]] = [6.5, 12.8]
+    df.loc[s.str.contains("7:00", na=False), ["runpace","runMETS"]] = [7.0, 12.3]
+    df.loc[s.str.contains("7:30", na=False), ["runpace","runMETS"]] = [7.5, 11.8]
+    df.loc[s.str.contains("8:00", na=False), ["runpace","runMETS"]] = [8.0, 11.8]
+    df.loc[s.str.contains("8:30", na=False), ["runpace","runMETS"]] = [8.5, 11.0]
+    df.loc[s.str.contains("9:00", na=False), ["runpace","runMETS"]] = [9.0, 10.5]
+
+    # SAS defaults
+    df["runpace"] = df["runpace"].fillna(8)
+    df["runMETS"] = df["runMETS"].fillna(11.8)
+
+    # ---- RUN HOURS (FROM MILES + PACE) ----
+    df["miles_wk"] = num("Q212")
+    df["hrsrunning"] = (df["miles_wk"] * df["runpace"]) / 60
+
+
+    # ---- INTENSITY → METS ----
+    def map_intensity(series, high, moderate, low, default):
+        s = series.astype(str)
+        out = pd.Series(np.nan, index=series.index)
+
+        out[s.str.contains("High", na=False)] = high
+        out[s.str.contains("Moderate", na=False)] = moderate
+        out[s.str.contains("Low", na=False)] = low
+
+        return out.fillna(default)
+
+    df["weightliftMETS"] = map_intensity(df["Q215"], 6, 5, 3.5, 5)
+    df["aquajogMETS"]    = map_intensity(df["Q219"], 9.8, 6.8, 4.8, 6.8)
+    df["bikeMETS"]       = map_intensity(df["Q224"], 10, 8, 6.8, 8)
+    df["ellipticalMETS"] = map_intensity(df["Q225"], 9, 7, 5, 7)
+
+
+    # ---- HOURS TEXT → NUMERIC ----
+    def convert_hours(series):
+        s = series.astype(str).str.upper()
+        out = pd.Series(np.nan, index=series.index)
+
+        mapping = {
+            "NONE": 0,
+            "HALF": 0.5,
+            "ONE HOUR": 1,
+            "ONE AND A HALF": 1.5,
+            "TWO": 2,
+            "TWO AND A HALF": 2.5,
+            "THREE HOURS": 3,
+            "THREE AND A HALF": 3.5,
+            "FOUR HOURS": 4,
+            "FOUR AND A HALF": 4.5,
+            "FIVE HOURS": 5,
+            "FIVE AND A HALF": 5.5,
+            "SIX HOURS": 6,
+            "SIX AND A HALF": 6.5,
+            "SEVEN HOURS": 7,
+            "SEVEN AND A HALF": 7.5,
+            "EIGHT HOURS": 8,
+            "EIGHT AND A HALF": 8.5,
+            "NINE HOURS": 9,
+            "NINE AND A HALF": 9.5,
+            "TEN HOURS": 10,
+            "TEN AND A HALF": 10.5,
+            "ELEVEN HOURS": 11,
+            "ELEVEN AND A HALF": 11.5,
+            "TWELVE HOURS": 12,
+            "TWELVE AND A HALF": 12.5,
+            "THIRTEEN HOURS": 13,
+            "THIRTEEN AND A HALF": 13.5,
+            "FOURTEEN HOURS": 14,
+            "FOURTEEN AND A HALF": 14.5,
+            "FIFTEEN HOURS": 15
+        }
+
+        for k, v in mapping.items():
+            out[s.str.contains(k, na=False)] = v
+
+        return out.fillna(0)
+
+
+    # ---- APPLY HOURS CONVERSION ----
+    df["Q70"]  = convert_hours(df["Q70"])
+    df["Q218"] = convert_hours(df["Q218"])
+    df["Q221"] = convert_hours(df["Q221"])
+    df["Q223"] = convert_hours(df["Q223"])
+
+    df["weightlifthrs"] = df["Q70"]
+    df["aquajoghrs"]    = df["Q218"]
+    df["bikehrs"]       = df["Q221"]
+    df["ellipticalhrs"] = df["Q223"]
+
 
     # ---- TOTAL HOURS (optional helper) ----
     df["total_ex_hrs"] = (
@@ -430,25 +509,25 @@ def process_exercise(df):
         df["ellipticalhrs"]
     )
 
-    # ---- MILES / WEEK (if present) ----
-    # Keep name to match your REDCap block
-    if "Q134" in df.columns:
-        df["miles_wk"] = num("Q134")
-    else:
-        df["miles_wk"] = 0
-
     return df
     
-
 def process_body_composition(df):
     df = df.copy()
 
-    df["bodyfat"] = 1.2 * df["bmi"] + 0.23 * df["age"] - 10.8 * df["ismale"] - 5.4
-    df["ffm"] = df["weightkg"] - (df["weightkg"] * df["bodyfat"] * 0.01)
+    # Ensure inputs behave like SAS (missing stays missing)
+    bmi = df["bmi"]
+    age = df["age"]
+    ismale = df["ismale"]
+    weightkg = df["weightkg"]
+
+    # ---- BODY FAT ----
+    df["bodyfat"] = 1.2 * bmi + 0.23 * age - 10.8 * ismale - 5.4
+
+    # ---- FFM ----
+    df["ffm"] = weightkg - weightkg * df["bodyfat"] * 0.01
 
     return df
-
-
+    
 def process_behavior_and_supplements(df):
     df = df.copy()
 
@@ -456,56 +535,65 @@ def process_behavior_and_supplements(df):
         if col in df.columns:
             return df[col].astype(str)
         else:
-            return pd.Series([""] * len(df))
+            return pd.Series([""] * len(df), index=df.index)
 
-    # ---- Meals / snacks ----
-    num_map = {
-        "one":1,"two":2,"three":3,"four":4,"five":5,
-        "six":6,"seven":7,"eight":8,"nine":9,"ten":10
-    }
+    # ---- Meals / snacks (EXACT match like SAS) ----
+    df["mealsday"] = np.nan
+    df["snacksday"] = np.nan
 
-    df["mealsday"] = get_series("Q152").str.lower().map(num_map)
-    df["snacksday"] = get_series("Q153").str.lower().map(num_map)
+    for i, word in enumerate(
+        ["One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten"], start=1
+    ):
+        df.loc[get_series("Q152") == word, "mealsday"] = i
+        df.loc[get_series("Q153") == word, "snacksday"] = i
 
     # ---- Yes / No ----
     df["fasting"] = np.where(get_series("Q154")=="Yes",1,0)
     df["skip"] = np.where(get_series("Q155")=="Yes",1,0)
 
-    # ---- Diet type ----
-    s = get_series("Q157").str.lower()
+    # ---- Diet type (ORDER MATTERS like SAS) ----
+    s = get_series("Q157")
 
-    df["vegetarian"] = np.where(s.str.contains("vegetarian", na=False),1,0)
-    df["vegan"] = np.where(s.str.contains("vegan", na=False),1,0)
+    df["vegetarian"] = 0
+    df["vegan"] = 0
 
+    df.loc[s.str.contains("Other (please describe)", na=False), ["vegetarian","vegan"]] = [0,0]
+    df.loc[s.str.contains("I do not follow", na=False), ["vegetarian","vegan"]] = [0,0]
+    df.loc[s.str.contains("I follow a vegetarian diet", na=False), ["vegetarian","vegan"]] = [1,0]
+    df.loc[s.str.contains("I follow a vegan diet", na=False), ["vegetarian","vegan"]] = [1,1]
+
+    # ---- Restrict ----
     df["restrict"] = np.where(
-        (df["vegetarian"]==1) | (df["vegan"]==1) |
-        ((get_series("Q158")=="Yes") & (get_series("Q232")=="No")),
-        1,0
+        (df["vegetarian"]==1) | (df["vegan"]==1),
+        1,
+        np.where(
+            (get_series("Q158")=="Yes") & (get_series("Q232")=="No"),
+            1,0
+        )
     )
 
     df["restrictallergy"] = np.where(get_series("Q232")=="Yes",1,0)
 
     # ---- Housing ----
-    s = get_series("Q240").str.lower()
+    s = get_series("Q240")
 
     df["housing"] = np.nan
-    df.loc[s.str.contains("student housing", na=False), "housing"] = 1
-    df.loc[s.str.contains("alone", na=False), "housing"] = 2
-    df.loc[s.str.contains("with one", na=False), "housing"] = 3
-    df.loc[s.str.contains("other", na=False), "housing"] = 4
+    df.loc[s.str.contains("I live in student housing on campus", na=False), "housing"] = 1
+    df.loc[s.str.contains("I live off campus (alone", na=False), "housing"] = 2
+    df.loc[s.str.contains("I live off campus with one", na=False), "housing"] = 3
+    df.loc[s.str.contains("Other", na=False), "housing"] = 4
 
     # ---- Food prep ----
-    s = get_series("Q241").str.lower()
+    s = get_series("Q241")
 
     df["foodprep"] = np.nan
-    df.loc[s.str.contains("family", na=False), "foodprep"] = 1
-    df.loc[s.str.contains("i am", na=False), "foodprep"] = 2
-    df.loc[s.str.contains("campus", na=False), "foodprep"] = 3
-    df.loc[s.str.contains("another", na=False), "foodprep"] = 4
+    df.loc[s.str.contains("A family member", na=False), "foodprep"] = 1
+    df.loc[s.str.contains("I am", na=False), "foodprep"] = 2
+    df.loc[s.str.contains("Campus", na=False), "foodprep"] = 3
+    df.loc[s.str.contains("Another", na=False), "foodprep"] = 4
 
     # ---- Food insecurity ----
     s = get_series("Q245")
-
     df["foodinsecure"] = np.where(
         (s=="Often true") | (s=="Sometimes true"), 1, 0
     )
@@ -515,8 +603,8 @@ def process_behavior_and_supplements(df):
     s166 = get_series("Q166")
 
     df["supp"] = np.where(
-        ((s165=="I do not take vitamins or minerals.") | (s165=="")) &
-        ((s166=="None") | (s166=="")),
+        ((s165=="I do not take vitamins or minerals.") | (s165==".")) &
+        ((s166=="None") | (s166==".")),
         0,1
     )
 
