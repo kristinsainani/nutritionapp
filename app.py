@@ -655,16 +655,15 @@ def process_nutrients_part2(df):
     # =========================
     # ---- MILK (by type) ----
     # =========================
-    df["milkkcal"] = 0
-    df["milkCHO"] = 0
-    df["milkPRO"] = 0
-    df["milkFAT"] = 0
+    df["milkkcal"] = 0.0
+    df["milkCHO"] = 0.0
+    df["milkPRO"] = 0.0
+    df["milkFAT"] = 0.0
 
-    df["FlvMilkkcal"] = 0
-    df["FlvMilkCHO"] = 0
-    df["FlvMilkPRO"] = 0
-    df["FlvMilkFAT"] = 0
-
+    df["FlvMilkkcal"] = 0.0
+    df["FlvMilkCHO"] = 0.0
+    df["FlvMilkPRO"] = 0.0
+    df["FlvMilkFAT"] = 0.0
     # nonfat
     mask = df["milktype"] == 1
     df.loc[mask, "milkkcal"] = num("milk")*90/7
@@ -697,11 +696,10 @@ def process_nutrients_part2(df):
     # =========================
     # ---- YOGURT ----
     # =========================
-    df["yogkcal"] = 0
-    df["yogCHO"] = 0
-    df["yogPRO"] = 0
-    df["yogFAT"] = 0
-
+    df["yogkcal"] = 0.0
+    df["yogCHO"] = 0.0
+    df["yogPRO"] = 0.0
+    df["yogFAT"] = 0.0
     mask = df["yogtype"] == 1
     df.loc[mask, "yogkcal"] = num("yogurt")*120/7
 
