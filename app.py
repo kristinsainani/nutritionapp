@@ -333,6 +333,100 @@ def process_body_metrics(df):
 
     return df
 
+
+def process_exercise(df):
+    df = df.copy()
+
+    # ---- Run pace + METS ----
+    s = df.get("Q213", "").astype(str)
+
+    df["runpace"] = np.nan
+    df["runMETS"] = np.nan
+
+    df.loc[s.str.contains("5:30", na=False), ["runpace","runMETS"]] = [5.5, 16]
+    df.loc[s.str.contains("6:00", na=False), ["runpace","runMETS"]] = [6, 14.5]
+    df.loc[s.str.contains("6:30", na=False), ["runpace","runMETS"]] = [6.5, 12.8]
+    df.loc[s.str.contains("7:00", na=False), ["runpace","runMETS"]] = [7, 12.3]
+    df.loc[s.str.contains("7:30", na=False), ["runpace","runMETS"]] = [7.5, 11.8]
+    df.loc[s.str.contains("8:00", na=False), ["runpace","runMETS"]] = [8, 11.8]
+    df.loc[s.str.contains("8:30", na=False), ["runpace","runMETS"]] = [8.5, 11]
+    df.loc[s.str.contains("9:00", na=False), ["runpace","runMETS"]] = [9, 10.5]
+
+    # defaults (SAS rule)
+    df["runpace"] = df["runpace"].fillna(8)
+    df["runMETS"] = df["runMETS"].fillna(11.8)
+
+    # ---- Miles per week ----
+    df["miles_wk"] = pd.to_numeric(df.get("Q212"), errors="coerce").fillna(0)
+
+    # ---- Hours running ----
+    df["hrsrunning"] = (df["miles_wk"] * df["runpace"]) / 60
+
+    # ---- Intensity → METS helper ----
+    def mets_from_intensity(series, high, mod, low, default):
+        s = series.astype(str).str.lower()
+        out = np.nan
+        out = np.where(s.str.contains("high"), high, out)
+        out = np.where(s.str.contains("moderate"), mod, out)
+        out = np.where(s.str.contains("low"), low, out)
+        return pd.Series(out).fillna(default)
+
+    df["weightliftMETS"] = mets_from_intensity(df.get("Q215",""), 6, 5, 3.5, 5)
+    df["aquajogMETS"]   = mets_from_intensity(df.get("Q219",""), 9.8, 6.8, 4.8, 6.8)
+    df["bikeMETS"]      = mets_from_intensity(df.get("Q224",""), 10, 8, 6.8, 8)
+    df["ellipticalMETS"]= mets_from_intensity(df.get("Q225",""), 9, 7, 5, 7)
+
+    # ---- Activity hours (string → number) ----
+    def hours_map(series):
+        s = series.astype(str).str.lower()
+        out = np.nan
+
+        mapping = {
+            "none": 0,
+            "half": 0.5,
+            "one hour": 1,
+            "one and a half": 1.5,
+            "two": 2,
+            "two and a half": 2.5,
+            "three": 3,
+            "three and a half": 3.5,
+            "four": 4,
+            "four and a half": 4.5,
+            "five": 5,
+            "five and a half": 5.5,
+            "six": 6,
+            "six and a half": 6.5,
+            "seven": 7,
+            "seven and a half": 7.5,
+            "eight": 8,
+            "eight and a half": 8.5,
+            "nine": 9,
+            "nine and a half": 9.5,
+            "ten": 10,
+            "ten and a half": 10.5,
+            "eleven": 11,
+            "eleven and a half": 11.5,
+            "twelve": 12,
+            "twelve and a half": 12.5,
+            "thirteen": 13,
+            "thirteen and a half": 13.5,
+            "fourteen": 14,
+            "fourteen and a half": 14.5,
+            "fifteen": 15
+        }
+
+        for key, val in mapping.items():
+            out = np.where(s.str.contains(key), val, out)
+
+        return pd.Series(out).fillna(0)
+
+    df["weightlifthrs"] = hours_map(df.get("Q70",""))
+    df["aquajoghrs"]    = hours_map(df.get("Q218",""))
+    df["bikehrs"]       = hours_map(df.get("Q221",""))
+    df["ellipticalhrs"] = hours_map(df.get("Q223",""))
+
+    return df
+
 if uploaded_file is not None:
     df = read_uploaded_file(uploaded_file)
     df = normalize_qualtrics_columns(df)
@@ -341,6 +435,7 @@ if uploaded_file is not None:
     df = create_food_variables(df)
     df = process_dairy_types(df)
     df = process_body_metrics(df)
+    df = process_exercise(df)
 
     st.write("Preview of uploaded data:")
     st.dataframe(df.head())
