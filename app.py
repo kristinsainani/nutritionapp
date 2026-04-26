@@ -244,6 +244,74 @@ def create_food_variables(df):
 
     return df
 
+def process_dairy_types(df):
+    df = df.copy()
+
+    def get_series(col):
+        if col in df.columns:
+            return df[col].astype(str)
+        else:
+            return pd.Series([""] * len(df))
+
+    # ---- MILK ----
+    s = get_series("Q64")
+
+    df["milktype"] = np.nan
+    df.loc[s.str.contains("Non fat", na=False), "milktype"] = 1
+    df.loc[s.str.contains("Low fat", na=False), "milktype"] = 2
+    df.loc[s.str.contains("Regular", na=False), "milktype"] = 3
+    df.loc[s.str.contains("soy milk", na=False), "milktype"] = 4
+    df.loc[s.str.contains("almond milk", na=False), "milktype"] = 5
+
+    df["milktype"] = df["milktype"].fillna(2)
+
+    # ---- PLAIN YOGURT ----
+    s = get_series("Q65")
+
+    df["yogtype"] = np.nan
+    df.loc[s.str.contains("Non fat yogurt", na=False), "yogtype"] = 1
+    df.loc[s.str.contains("Low fat yogurt", na=False), "yogtype"] = 2
+    df.loc[s.str.contains("Regular (full-fat) yogurt", na=False), "yogtype"] = 3
+    df.loc[s.str.contains("Non-dairy yogurt", na=False), "yogtype"] = 4
+    df.loc[s.str.contains("Greek yogurt (non fat", na=False), "yogtype"] = 5
+    df.loc[s.str.contains("Greek yogurt (regular", na=False), "yogtype"] = 6
+
+    df["yogtype"] = df["yogtype"].fillna(2)
+
+    # ---- FLAVORED YOGURT ----
+    s = get_series("Q286")
+
+    df["flvyogtype"] = np.nan
+    df.loc[s.str.contains("Non fat yogurt", na=False), "flvyogtype"] = 1
+    df.loc[s.str.contains("Low fat yogurt", na=False), "flvyogtype"] = 2
+    df.loc[s.str.contains("Non-dairy yogurt", na=False), "flvyogtype"] = 3
+    df.loc[s.str.contains("Greek yogurt", na=False), "flvyogtype"] = 4
+    df.loc[s.str.contains("no sugar added", na=False), "flvyogtype"] = 5
+
+    df["flvyogtype"] = df["flvyogtype"].fillna(2)
+
+    # ---- CHEESE ----
+    s = get_series("Q179")
+
+    df["cheesetype"] = np.nan
+    df.loc[s.str.contains("Regular dairy cheese", na=False), "cheesetype"] = 1
+    df.loc[s.str.contains("Reduced fat", na=False) | s.str.contains("light", na=False), "cheesetype"] = 2
+    df.loc[s.str.contains("Non-dairy cheese", na=False), "cheesetype"] = 3
+
+    df["cheesetype"] = df["cheesetype"].fillna(1)
+
+    # ---- SALAD DRESSING ----
+    s = get_series("Q156_0001")
+
+    df["slddessingtype"] = np.nan
+    df.loc[s.str.contains("Regular", na=False), "slddessingtype"] = 1
+    df.loc[s.str.contains("Reduced", na=False), "slddessingtype"] = 2
+    df.loc[s.str.contains("Fat-free", na=False), "slddessingtype"] = 3
+
+    df["slddessingtype"] = df["slddessingtype"].fillna(1)
+
+    return df
+
 def process_body_composition(df):
     df = df.copy()
 
