@@ -522,6 +522,128 @@ def process_behavior_and_supplements(df):
 
     return df
 
+def process_nutrients(df):
+    df = df.copy()
+
+    # helper: safe numeric
+    def num(col):
+        if col in df.columns:
+            return pd.to_numeric(df[col], errors="coerce").fillna(0)
+        else:
+            return 0
+
+    # ---- FRUIT ----
+    df["fruitkcal"] = (num("fruits")*60) + (num("driedfruit")*60) + (num("fruitjuice")*120/7)
+    df["FruitCHO"] = (num("fruits")*15) + (num("driedfruit")*15) + (num("fruitjuice")*30/7)
+    df["FruitFiber"] = (num("fruits")*2) + (num("driedfruit")*2)
+    df["Fruit"] = (num("fruits")/2) + (num("driedfruit")/2) + (num("fruitjuice")/7)
+
+    # ---- COCONUT WATER ----
+    df["coconutwaterkcal"] = num("coconutwater")*45/7
+    df["coconutwatercho"] = num("coconutwater")*10/7
+
+    # ---- NON-STARCHY VEG ----
+    df["vegNSkcal"] = (num("vegrlg")*25) + (num("vegother")*37.5) + (num("TomSauc")*50/7) + (num("TomJuice")*50/7)
+    df["vegNSCHO"] = (num("vegrlg")*5) + (num("vegother")*7.5) + (num("TomSauc")*10/7) + (num("TomJuice")*10/7)
+    df["vegNSPRO"] = (num("vegrlg")*2) + (num("vegother")*3) + (num("TomSauc")*4/7) + (num("TomJuice")*4/7)
+    df["vegNSFiber"] = (num("vegrlg")*2.5) + (num("vegother")*4) + (num("TomSauc")*4/7) + (num("TomJuice")*4/7)
+    df["NSVeg"] = (num("vegrlg")*0.5) + (num("vegother")*1) + (num("TomSauc")/7) + (num("TomJuice")/7)
+
+    # ---- GRAINS ----
+    df["Grainkcal"] = (num("plainbrd")*80) + (num("BkdBrd")*125) + (num("CRPast")*80) + (num("GrnsOtr")*125)
+    df["GrainCHO"] = (num("plainbrd")*15) + (num("BkdBrd")*15) + (num("CRPast")*15) + (num("GrnsOtr")*15)
+    df["GrainPRO"] = (num("plainbrd")*3) + (num("BkdBrd")*3) + (num("CRPast")*3) + (num("GrnsOtr")*3)
+    df["GrainFAT"] = (num("BkdBrd")*5) + (num("GrnsOtr")*5)
+    df["GrainFiber"] = (num("plainbrd") + num("BkdBrd") + num("CRPast") + num("GrnsOtr"))*1
+    df["Grains"] = num("plainbrd") + num("BkdBrd") + num("CRPast") + num("GrnsOtr")
+
+    # ---- LEGUMES ----
+    df["Legumeskcal"] = num("Legumess")*100/7
+    df["LegumesCHO"] = num("Legumess")*15/7
+    df["LegumesPRO"] = num("Legumess")*6/7
+    df["LegumesFiber"] = num("Legumess")*5/7
+    df["Legumes"] = num("Legumess")*0.14/2
+
+    # ---- CORN ----
+    df["Cornkcal"] = num("Corn")*80/7
+    df["CornCHO"] = num("Corn")*15/7
+    df["CornPRO"] = num("Corn")*3/7
+    df["CornFiber"] = num("Corn")*1
+
+    # ---- POTATO ----
+    df["Potatokcal"] = (num("PotatoNF")*80 + num("PotatoFr")*125)/7
+    df["PotatoCHO"] = (num("PotatoNF")*15 + num("PotatoFr")*15)/7
+    df["PotatoPRO"] = (num("PotatoNF")*3 + num("PotatoFr")*3)/7
+    df["PotatoFAT"] = num("PotatoFr")*5/7
+    df["PotatoFiber"] = (num("PotatoNF") + num("PotatoFr"))/7
+    df["PotatoTotal"] = (num("PotatoNF") + num("PotatoFr"))*0.14/2
+
+    # ---- STARCH VEG ----
+    df["VegSkcal"] = df["Legumeskcal"] + df["Cornkcal"] + df["Potatokcal"]
+    df["VegSCHO"] = df["LegumesCHO"] + df["CornCHO"] + df["PotatoCHO"]
+    df["vegSpro"] = df["LegumesPRO"] + df["CornPRO"] + df["PotatoPRO"]
+    df["vegSfat"] = df["PotatoFAT"]
+    df["vegSfiber"] = df["LegumesFiber"] + df["CornFiber"] + df["PotatoFiber"]
+
+    df["StarchVeg"] = (num("Legumess") + num("Corn") + num("PotatoNF") + num("PotatoFr"))*0.14/2
+    df["VegAll"] = df["NSVeg"] + df["StarchVeg"]
+
+    # ---- MEAT + FISH + EGGS ----
+    df["MeatPoultrykcal"] = (num("LeanMeat")*135 + num("FatMeat")*262.5)/7
+    df["MeatPoultryPRO"] = (num("LeanMeat")*21 + num("FatMeat")*21)/7
+    df["MeatPoultryFAT"] = (num("LeanMeat")*4.5 + num("FatMeat")*19.5)/7
+
+    df["FattyFishkcal"] = num("FtyFish")*195/7
+    df["FattyFishPRO"] = num("FtyFish")*21/7
+    df["FattyFishFAT"] = num("FtyFish")*12/7
+
+    df["Eggskcal"] = (num("WhEgg")*70 + num("EggWt")*20)/7
+    df["EggsPRO"] = (num("WhEgg")*6 + num("EggWt")*4)/7
+    df["EggsFAT"] = num("WhEgg")*5/7
+
+    # ---- TOTAL KCAL (core outcome) ----
+    df["KcalTotal"] = (
+        df["fruitkcal"] + df["vegNSkcal"] + df["Grainkcal"] + df["VegSkcal"] +
+        df["MeatPoultrykcal"] + df["FattyFishkcal"] + df["Eggskcal"] +
+        df["coconutwaterkcal"]
+    )
+
+    # ---- MACROS ----
+    df["CHO"] = (
+        df["FruitCHO"] + df["vegNSCHO"] + df["GrainCHO"] +
+        df["VegSCHO"] + df["coconutwatercho"]
+    )
+
+    df["FAT"] = (
+        df["GrainFAT"] + df["vegSfat"] +
+        df["MeatPoultryFAT"] + df["FattyFishFAT"] + df["EggsFAT"]
+    )
+
+    df["PRO"] = (
+        df["vegNSPRO"] + df["GrainPRO"] + df["vegSpro"] +
+        df["MeatPoultryPRO"] + df["FattyFishPRO"] + df["EggsPRO"]
+    )
+
+    df["Fiber"] = (
+        df["FruitFiber"] + df["vegNSFiber"] + df["GrainFiber"] + df["vegSfiber"]
+    )
+
+    # ---- EXERCISE ENERGY ----
+    df["runkcal"] = (num("weightkg")*num("runMETS")*num("hrsrunning"))/7
+    df["weightliftkcal"] = (num("weightkg")*num("weightliftMETS")*num("weightlifthrs"))/7
+    df["aquajogkcal"] = (num("weightkg")*num("aquajogMETS")*num("aquajoghrs"))/7
+    df["bikekcal"] = (num("weightkg")*num("bikeMETS")*num("bikehrs"))/7
+    df["ellipticalkcal"] = (num("weightkg")*num("ellipticalMETS")*num("ellipticalhrs"))/7
+
+    df["EEE"] = df["runkcal"] + df["weightliftkcal"] + df["aquajogkcal"] + df["bikekcal"] + df["ellipticalkcal"]
+
+    # ---- ENERGY AVAILABILITY ----
+    df["EA"] = (df["KcalTotal"] - df["EEE"]) / num("FFM")
+    df.loc[df["KcalTotal"] == 0, "EA"] = np.nan
+
+    return df
+
+
 if uploaded_file is not None:
     df = read_uploaded_file(uploaded_file)
     df = normalize_qualtrics_columns(df)
@@ -533,6 +655,7 @@ if uploaded_file is not None:
     df = process_exercise(df)
     df = process_body_composition(df)
     df = process_behavior_and_supplements(df)
+    df = process_nutrients(df)
     
     st.write("Preview of uploaded data:")
     st.dataframe(df.head())
