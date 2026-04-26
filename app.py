@@ -721,10 +721,10 @@ def process_nutrients_part2(df):
     # =========================
     # ---- CHEESE ----
     # =========================
-    df["cheesekcal"] = 0
-    df["cheesePRO"] = 0
-    df["cheeseFAT"] = 0
-    df["cheesecho"] = 0
+    df["cheesekcal"] = 0.0
+    df["cheesePRO"] = 0.0
+    df["cheeseFAT"] = 0.0
+    df["cheesecho"] = 0.0
 
     mask = df["cheesetype"] == 1
     df.loc[mask, "cheesekcal"] = num("cheese")*100/7
