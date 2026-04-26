@@ -13,10 +13,10 @@ uploaded_file = st.file_uploader("Upload Qualtrics export", type=["csv", "xlsx",
 def read_uploaded_file(file):
     if file.name.lower().endswith(".csv"):
         try:
-            return pd.read_csv(file, skiprows=[1], dtype=str, keep_default_na=False, na_values=[])
+            return pd.read_csv(file, skiprows=[1], dtype=str)
         except Exception:
             file.seek(0)
-            return pd.read_csv(file, skiprows=[1], encoding="latin1", dtype=str, keep_default_na=False, na_values=[])
+            return pd.read_csv(file, skiprows=[1], encoding="latin1", dtype=str)
     elif file.name.lower().endswith(".xlsx") or file.name.lower().endswith(".xls"):
         return pd.read_excel(file, skiprows=[1], dtype=str)
     else:
@@ -25,7 +25,6 @@ def read_uploaded_file(file):
 
 def clean_missing_strings(df):
     df = df.copy()
-    df = df.fillna("")
     return df
 
 
@@ -36,6 +35,20 @@ def ensure_columns(df, cols):
             df[col] = ""
     return df
 
+def normalize_qualtrics_columns(df):
+    counts = {}
+    new_cols = []
+
+    for col in df.columns:
+        if col not in counts:
+            counts[col] = 0
+            new_cols.append(col)
+        else:
+            counts[col] += 1
+            new_cols.append(f"{col}_{counts[col]:04d}")
+
+    df.columns = new_cols
+    return df
 
 def sas_index(value, substring):
     if pd.isna(value):
@@ -63,13 +76,20 @@ def to_num(value):
 
 def first_numeric_from_string(value):
     if pd.isna(value):
-        return ""
+        return np.nan
     s = str(value)
     keep = re.sub(r"[^0-9.\-]", " ", s)
     parts = keep.split()
     if len(parts) == 0:
-        return ""
-    return parts[0]
+        return np.nan
+    return float(parts[0])
+
+if uploaded_file is not None:
+    df = read_uploaded_file(uploaded_file)
+    df = normalize_qualtrics_columns(df)
+
+    st.write("Preview of uploaded data:")
+    st.dataframe(df.head())
 
 
 def convert_food_frequency(value):
