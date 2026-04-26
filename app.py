@@ -254,10 +254,10 @@ def process_dairy_types(df):
     df.loc[s.str.contains("Non fat", na=False), "milktype"] = 1
     df.loc[s.str.contains("Low fat", na=False), "milktype"] = 2
     df.loc[s.str.contains("Regular", na=False), "milktype"] = 3
-    df.loc[s.str.contains("Non-dairy [soy milk]", regex=False), "milktype"] = 4
-    df.loc[s.str.contains("Non-dairy [almond milk", na=False), "milktype"] = 5
+    df.loc[s.str.contains("soy milk", na=False), "milktype"] = 4
+    df.loc[s.str.contains("almond milk", na=False), "milktype"] = 5
 
-    df["milktype"] = df["milktype"].fillna(2)  # default = low fat
+    df["milktype"] = df["milktype"].fillna(2)
 
     # ---- Plain yogurt ----
     s = df["Q65"].astype(str)
@@ -280,7 +280,7 @@ def process_dairy_types(df):
     df.loc[s.str.contains("Low fat yogurt", na=False), "flvyogtype"] = 2
     df.loc[s.str.contains("Non-dairy yogurt", na=False), "flvyogtype"] = 3
     df.loc[s.str.contains("Greek yogurt", na=False), "flvyogtype"] = 4
-    df.loc[s.str.contains('no sugar added', na=False), "flvyogtype"] = 5
+    df.loc[s.str.contains("no sugar added", na=False), "flvyogtype"] = 5
 
     df["flvyogtype"] = df["flvyogtype"].fillna(2)
 
