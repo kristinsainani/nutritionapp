@@ -95,7 +95,7 @@ def process_servings(df):
         "Q264","Q265","Q266","Q267","Q268","Q26","Q270","Q271","Q160_0001",
         "Q158_0001","Q134","Q42","Q61","Q62","Q63","Q43","Q60","Q278","Q279",
         "Q280","Q276","Q257","Q125","Q281","Q282","Q285","Q284","Q273","Q272",
-        "Q52","Q269","Q289","Q290","Q291","Q292"
+        "Q52","Q269","Q289","Q290","Q291","Q292", "Q70","Q218","Q221","Q223","Q209","Q210", "Q230", "Q200"
     ]
 
     for col in vars_list:
@@ -178,32 +178,42 @@ def create_food_variables(df):
         else:
             df[new_col] = 0
 
+    # ===============================
+    # FOOD VARIABLE ASSIGNMENT (SAS MATCHED)
+    # ===============================
+
     safe_assign("fruits", "Q10")
     safe_assign("driedfruit", "Q11")
     safe_assign("fruitjuice", "Q12")
+
     safe_assign("vegrlg", "Q149")
     safe_assign("vegother", "Q146")
     safe_assign("tomsauc", "Q1")
     safe_assign("tomjuice", "Q150")
+
     safe_assign("plainbrd", "Q24")
     safe_assign("bkdbrd", "Q165_0001")
     safe_assign("crpast", "Q23")
     safe_assign("grnsotr", "Q148")
+
     safe_assign("legumess", "Q161_0001")
     safe_assign("corn", "Q162_0001")
     safe_assign("potatonf", "Q163")
     safe_assign("potatofr", "Q164")
+
     safe_assign("leanmeat", "Q27")
     safe_assign("fatmeat", "Q28")
     safe_assign("ftyfish", "Q29")
     safe_assign("whegg", "Q177")
     safe_assign("eggwt", "Q178")
+
     safe_assign("milk", "Q33")
     safe_assign("flvmilk", "Q169")
     safe_assign("yogurt", "Q170")
     safe_assign("flvyogurt", "Q168")
     safe_assign("cheese", "Q171")
     safe_assign("cotcheese", "Q35")
+
     safe_assign("vegoil", "Q261")
     safe_assign("nutbtr", "Q262")
     safe_assign("cocoilbt", "Q263")
@@ -215,28 +225,35 @@ def create_food_variables(df):
     safe_assign("mayo", "Q269")
     safe_assign("mrgrne", "Q270")
     safe_assign("hlfhlf", "Q271")
+
     safe_assign("olives", "Q160_0001")
     safe_assign("nuts", "Q158_0001")
     safe_assign("avocado", "Q134")
+
     safe_assign("choccndy", "Q42")
     safe_assign("nonchccndy", "Q61")
     safe_assign("icecrm", "Q62")
     safe_assign("froyo", "Q63")
     safe_assign("bkdgd", "Q43")
+
     safe_assign("swtbvg", "Q60")
     safe_assign("swttcfee", "Q278")
     safe_assign("otrswtbvg", "Q280")
     safe_assign("nrgdrnk", "Q279")
+
     safe_assign("coconutwater", "Q276")
     safe_assign("slddressing", "Q257")
+
     safe_assign("nrgbar", "Q125")
     safe_assign("probar", "Q281")
     safe_assign("chodrnk", "Q282")
     safe_assign("gel", "Q285")
     safe_assign("prodrnk", "Q284")
+
     safe_assign("zerocaldrnk", "Q273")
     safe_assign("unswttcfee", "Q272")
     safe_assign("water", "Q52")
+
     safe_assign("beer", "Q289")
     safe_assign("spirits", "Q290")
     safe_assign("mixed", "Q291")
@@ -316,38 +333,37 @@ def process_dairy_types(df):
 def process_body_metrics(df):
     df = df.copy()
 
-    def num(col):
+    def clean_numeric(col):
         if col in df.columns:
-            return pd.to_numeric(df[col], errors="coerce")
+            return (
+                df[col]
+                .astype(str)
+                .str.replace(r"[^0-9\-]", "", regex=True)  # keep digits and dash
+                .str.split("-")
+                .str[0]  # take first value if range
+                .astype(float)
+            )
         else:
-            return pd.Series([np.nan]*len(df), index=df.index)
+            return pd.Series(np.nan, index=df.index)
 
-    def get(col):
-        if col in df.columns:
-            return df[col].astype(str)
-        else:
-            return pd.Series([""]*len(df), index=df.index)
+    # Clean inputs
+    height_in = clean_numeric("Q209")
+    weight_lb = clean_numeric("Q210")
 
-    # ---- AGE ----
-    df["age"] = num("Q1")
+    # Convert units
+    df["weightkg"] = weight_lb / 2.2
+    df["heightm"] = height_in * 0.0254
 
-    # ---- GENDER ----
-    gender_series = get("Q2")
-    df["gender"] = gender_series
-
-    df["ismale"] = np.where(
-        gender_series.str.lower().str.contains("male", na=False),
-        1, 0
-    )
-
-    # ---- HEIGHT ----
-    df["heightm"] = num("Q3") / 100
-
-    # ---- WEIGHT ----
-    df["weightkg"] = num("Q4")
-
-    # ---- BMI ----
+    # BMI
     df["bmi"] = df["weightkg"] / (df["heightm"] ** 2)
+
+    # Gender
+    df["gender"] = df["Q230"]
+    df["ismale"] = np.where(df["Q230"] == "Male", 1,
+                     np.where(df["Q230"] == "Female", 0, np.nan))
+
+    # Age
+    df["age"] = pd.to_numeric(df["Q200"], errors="coerce")
 
     return df
 
