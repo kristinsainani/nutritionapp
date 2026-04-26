@@ -322,20 +322,31 @@ def process_body_metrics(df):
         else:
             return pd.Series([np.nan]*len(df), index=df.index)
 
-    # ---- BASIC BODY METRICS ----
+    def get(col):
+        if col in df.columns:
+            return df[col].astype(str)
+        else:
+            return pd.Series([""]*len(df), index=df.index)
+
+    # ---- AGE ----
     df["age"] = num("Q1")
-    df["gender"] = df["Q2"]
 
-    # ismale (SAS style: 1 = male, 0 = female)
-    df["ismale"] = np.where(df["gender"].astype(str).str.contains("male", case=False, na=False), 1, 0)
+    # ---- GENDER ----
+    gender_series = get("Q2")
+    df["gender"] = gender_series
 
-    # height (meters)
+    df["ismale"] = np.where(
+        gender_series.str.lower().str.contains("male", na=False),
+        1, 0
+    )
+
+    # ---- HEIGHT ----
     df["heightm"] = num("Q3") / 100
 
-    # weight (kg)
+    # ---- WEIGHT ----
     df["weightkg"] = num("Q4")
 
-    # BMI
+    # ---- BMI ----
     df["bmi"] = df["weightkg"] / (df["heightm"] ** 2)
 
     return df
