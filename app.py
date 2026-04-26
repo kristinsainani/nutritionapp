@@ -823,7 +823,6 @@ if uploaded_file is not None:
     df = process_body_composition(df)
     df = process_behavior_and_supplements(df)
     df = process_nutrients(df)
-    df = process_nutrients_part2(df)
 
     # ===============================
     # OUTPUT DATASETS
