@@ -772,22 +772,23 @@ def process_nutrients_part2(df):
 
 def create_redcap_dataset(df):
     df = df.copy()
-
+    df["id"] = df["Q182"]
     cols = [
-        "id","age","gender","ismale","weightkg","heightm","bmi","FFM",
-        "EEE","EI","EI_kg","EA","lowEA_clinical","lowEA_subclinical",
-        "miles_wk","Fruit","NSVeg","StarchVeg","VegAll","Legumes","Grains",
-        "ProFoods","MtPltry","FttyFish","Eggs","Dairy","fluids",
-        "CHO","CHOkg","PRO","PROkg","FAT","FATkg","Fiber",
-        "MealsDay","SnacksDay","Fasting","Skip","Vegetarian","Vegan",
-        "Restrict","RestrictAllergy","Housing","FoodPrep","FoodInsecure",
-        "percep1","percep2","percep3","percep4","percep5",
-        "BarsWk","ProBarsWk","ProDrnkWk","GelChewWk",
-        "chodrnk","caffdrnk",
-        "supp","vitamin","iron","calcium","vitamind",
-        "caffeine","creatine","prewrkout","wtgainer","wtlosssupp",
-        "aasupp","herbotsupp"
+    "id","age","gender","ismale","weightkg","heightm","bmi","ffm",
+    "eee","ei","ei_kg","ea","lowea_clinical","lowea_subclinical",
+    "miles_wk","fruit","nsveg","starchveg","vegall","legumes","grains",
+    "profoods","mtpltry","fttyfish","eggs","dairy","fluids",
+    "cho","chokg","pro","prokg","fat","fatkg","fiber",
+    "mealsday","snacksday","fasting","skip","vegetarian","vegan",
+    "restrict","restrictallergy","housing","foodprep","foodinsecure",
+    "percep1","percep2","percep3","percep4","percep5",
+    "barswk","probarswk","prodrnkwk","gelchewwk",
+    "chodrnk","caffdrnk",
+    "supp","vitamin","iron","calcium","vitamind",
+    "caffeine","creatine","prewrkout","wtgainer","wtlosssupp",
+    "aasupp","herbotsupp"
     ]
+
 
     cols = [c for c in cols if c in df.columns]
     return df[cols]
