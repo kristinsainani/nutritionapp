@@ -646,11 +646,11 @@ def process_nutrients(df):
 def process_nutrients_part2(df):
     df = df.copy()
 
-def num(col):
-    if col in df.columns:
-        return pd.to_numeric(df[col], errors="coerce").fillna(0)
-    else:
-        return pd.Series([0]*len(df), index=df.index)
+    def num(col):
+        if col in df.columns:
+            return pd.to_numeric(df[col], errors="coerce").fillna(0)
+        else:
+            return pd.Series([0]*len(df), index=df.index)
 
     # =========================
     # ---- MILK (by type) ----
@@ -810,7 +810,6 @@ if uploaded_file is not None:
     df = process_exercise(df)
     df = process_body_composition(df)
     df = process_behavior_and_supplements(df)
-    df = process_nutrients(df)
     df = process_nutrients(df)
     df = process_nutrients_part2(df)
     
