@@ -643,6 +643,161 @@ def process_nutrients(df):
 
     return df
 
+def process_nutrients_part2(df):
+    df = df.copy()
+
+    def num(col):
+        if col in df.columns:
+            return pd.to_numeric(df[col], errors="coerce").fillna(0)
+        else:
+            return 0
+
+    # =========================
+    # ---- MILK (by type) ----
+    # =========================
+    df["milkkcal"] = 0
+    df["milkCHO"] = 0
+    df["milkPRO"] = 0
+    df["milkFAT"] = 0
+
+    df["FlvMilkkcal"] = 0
+    df["FlvMilkCHO"] = 0
+    df["FlvMilkPRO"] = 0
+    df["FlvMilkFAT"] = 0
+
+    # nonfat
+    mask = df["milktype"] == 1
+    df.loc[mask, "milkkcal"] = num("milk")*90/7
+    df.loc[mask, "milkCHO"] = num("milk")*12/7
+    df.loc[mask, "milkPRO"] = num("milk")*8/7
+    df.loc[mask, "milkFAT"] = num("milk")*1.5/7
+
+    df.loc[mask, "FlvMilkkcal"] = num("FlvMilk")*168/7
+    df.loc[mask, "FlvMilkCHO"] = num("FlvMilk")*34/7
+    df.loc[mask, "FlvMilkPRO"] = num("FlvMilk")*8/7
+
+    # lowfat
+    mask = df["milktype"] == 2
+    df.loc[mask, "milkkcal"] = num("milk")*120/7
+    df.loc[mask, "milkFAT"] = num("milk")*5/7
+
+    # whole
+    mask = df["milktype"] == 3
+    df.loc[mask, "milkkcal"] = num("milk")*150/7
+    df.loc[mask, "milkFAT"] = num("milk")*8/7
+
+    # soy
+    mask = df["milktype"] == 4
+    df.loc[mask, "milkkcal"] = num("milk")*100/7
+
+    # almond/nonsoy
+    mask = df["milktype"] == 5
+    df.loc[mask, "milkkcal"] = num("milk")*50/7
+
+    # =========================
+    # ---- YOGURT ----
+    # =========================
+    df["yogkcal"] = 0
+    df["yogCHO"] = 0
+    df["yogPRO"] = 0
+    df["yogFAT"] = 0
+
+    mask = df["yogtype"] == 1
+    df.loc[mask, "yogkcal"] = num("yogurt")*120/7
+
+    mask = df["yogtype"] == 2
+    df.loc[mask, "yogkcal"] = num("yogurt")*150/7
+
+    mask = df["yogtype"] == 3
+    df.loc[mask, "yogkcal"] = num("yogurt")*150/7
+
+    mask = df["yogtype"] == 4
+    df.loc[mask, "yogkcal"] = num("yogurt")*162/7
+
+    mask = df["yogtype"] == 5
+    df.loc[mask, "yogkcal"] = num("yogurt")*179/7
+
+    mask = df["yogtype"] == 6
+    df.loc[mask, "yogkcal"] = num("yogurt")*238/7
+
+    # =========================
+    # ---- CHEESE ----
+    # =========================
+    df["cheesekcal"] = 0
+    df["cheesePRO"] = 0
+    df["cheeseFAT"] = 0
+    df["cheesecho"] = 0
+
+    mask = df["cheesetype"] == 1
+    df.loc[mask, "cheesekcal"] = num("cheese")*100/7
+    df.loc[mask, "cheesePRO"] = num("cheese")*7/7
+    df.loc[mask, "cheeseFAT"] = num("cheese")*8/7
+
+    mask = df["cheesetype"] == 2
+    df.loc[mask, "cheesekcal"] = num("cheese")*75/7
+
+    mask = df["cheesetype"] == 3
+    df.loc[mask, "cheesekcal"] = num("cheese")*74/7
+    df.loc[mask, "cheesecho"] = num("cheese")*3/7
+
+    # =========================
+    # ---- SWEETS ----
+    # =========================
+    df["sweetskcal"] = (
+        num("ChocCndy")*105/7 +
+        num("NonChcCndy")*60/7 +
+        num("IceCrm")*150/7 +
+        num("FroYo")*105/7 +
+        num("BkdGd")*105/7
+    )
+
+    # =========================
+    # ---- DRINKS ----
+    # =========================
+    df["drinkskcal"] = (
+        num("SwtBvg")*120 +
+        num("SwtTCfee")*75 +
+        num("OtrSwtBvg")*120 +
+        num("NrgDrnk")*110 +
+        num("chodrnk")*65/7
+    )
+
+    # =========================
+    # ---- TOTAL KCAL FINAL ----
+    # =========================
+    df["KcalTotal"] = (
+        df["KcalTotal"] +
+        df["milkkcal"] + df["FlvMilkkcal"] +
+        df["yogkcal"] +
+        df["cheesekcal"] +
+        df["sweetskcal"] +
+        df["drinkskcal"]
+    )
+
+    # =========================
+    # ---- FINAL ENERGY ----
+    # =========================
+    df["EI"] = df["KcalTotal"]
+    df.loc[df["EI"] == 0, "EI"] = np.nan
+
+    df["EI_kg"] = df["EI"] / num("weightkg")
+
+    # =========================
+    # ---- LOW EA FLAGS ----
+    # =========================
+    df["lowEA_clinical"] = 0
+    df["lowEA_subclinical"] = 0
+
+    male = df["ismale"] == 1
+    female = df["ismale"] == 0
+
+    df.loc[male & (df["EA"] > 0) & (df["EA"] < 15), "lowEA_clinical"] = 1
+    df.loc[male & (df["EA"] >= 15) & (df["EA"] < 30), "lowEA_subclinical"] = 1
+
+    df.loc[female & (df["EA"] > 0) & (df["EA"] < 30), "lowEA_clinical"] = 1
+    df.loc[female & (df["EA"] >= 30) & (df["EA"] < 45), "lowEA_subclinical"] = 1
+
+    return df
 
 if uploaded_file is not None:
     df = read_uploaded_file(uploaded_file)
@@ -656,6 +811,8 @@ if uploaded_file is not None:
     df = process_body_composition(df)
     df = process_behavior_and_supplements(df)
     df = process_nutrients(df)
+    df = process_nutrients(df)
+    df = process_nutrients_part2(df)
     
     st.write("Preview of uploaded data:")
     st.dataframe(df.head())
