@@ -439,62 +439,67 @@ def process_body_composition(df):
 def process_behavior_and_supplements(df):
     df = df.copy()
 
+    def get_series(col):
+        if col in df.columns:
+            return df[col].astype(str)
+        else:
+            return pd.Series([""] * len(df))
+
     # ---- Meals / snacks ----
     num_map = {
         "one":1,"two":2,"three":3,"four":4,"five":5,
         "six":6,"seven":7,"eight":8,"nine":9,"ten":10
     }
 
-    df["MealsDay"] = df.get("Q152","").str.lower().map(num_map)
-    df["SnacksDay"] = df.get("Q153","").str.lower().map(num_map)
+    df["MealsDay"] = get_series("Q152").str.lower().map(num_map)
+    df["SnacksDay"] = get_series("Q153").str.lower().map(num_map)
 
     # ---- Yes / No ----
-    df["Fasting"] = np.where(df.get("Q154")=="Yes",1,0)
-    df["Skip"] = np.where(df.get("Q155")=="Yes",1,0)
+    df["Fasting"] = np.where(get_series("Q154")=="Yes",1,0)
+    df["Skip"] = np.where(get_series("Q155")=="Yes",1,0)
 
     # ---- Diet type ----
-    s = df.get("Q157","").astype(str).str.lower()
+    s = get_series("Q157").str.lower()
 
-    df["Vegetarian"] = np.where(s.str.contains("vegetarian"),1,0)
-    df["Vegan"] = np.where(s.str.contains("vegan"),1,0)
+    df["Vegetarian"] = np.where(s.str.contains("vegetarian", na=False),1,0)
+    df["Vegan"] = np.where(s.str.contains("vegan", na=False),1,0)
 
-    # ---- Restrict ----
     df["Restrict"] = np.where(
         (df["Vegetarian"]==1) | (df["Vegan"]==1) |
-        ((df.get("Q158")=="Yes") & (df.get("Q232")=="No")),
+        ((get_series("Q158")=="Yes") & (get_series("Q232")=="No")),
         1,0
     )
 
-    df["RestrictAllergy"] = np.where(df.get("Q232")=="Yes",1,0)
+    df["RestrictAllergy"] = np.where(get_series("Q232")=="Yes",1,0)
 
     # ---- Housing ----
-    s = df.get("Q240","").astype(str).str.lower()
+    s = get_series("Q240").str.lower()
 
     df["Housing"] = np.nan
-    df.loc[s.str.contains("student housing"), "Housing"] = 1
-    df.loc[s.str.contains("alone"), "Housing"] = 2
-    df.loc[s.str.contains("with one"), "Housing"] = 3
-    df.loc[s.str.contains("other"), "Housing"] = 4
+    df.loc[s.str.contains("student housing", na=False), "Housing"] = 1
+    df.loc[s.str.contains("alone", na=False), "Housing"] = 2
+    df.loc[s.str.contains("with one", na=False), "Housing"] = 3
+    df.loc[s.str.contains("other", na=False), "Housing"] = 4
 
     # ---- Food prep ----
-    s = df.get("Q241","").astype(str).str.lower()
+    s = get_series("Q241").str.lower()
 
     df["FoodPrep"] = np.nan
-    df.loc[s.str.contains("family"), "FoodPrep"] = 1
-    df.loc[s.str.contains("i am"), "FoodPrep"] = 2
-    df.loc[s.str.contains("campus"), "FoodPrep"] = 3
-    df.loc[s.str.contains("another"), "FoodPrep"] = 4
+    df.loc[s.str.contains("family", na=False), "FoodPrep"] = 1
+    df.loc[s.str.contains("i am", na=False), "FoodPrep"] = 2
+    df.loc[s.str.contains("campus", na=False), "FoodPrep"] = 3
+    df.loc[s.str.contains("another", na=False), "FoodPrep"] = 4
 
     # ---- Food insecurity ----
-    s = df.get("Q245","").astype(str)
+    s = get_series("Q245")
 
     df["FoodInsecure"] = np.where(
         (s=="Often true") | (s=="Sometimes true"), 1, 0
     )
 
     # ---- Supplements ----
-    s165 = df.get("Q165","").astype(str)
-    s166 = df.get("Q166","").astype(str)
+    s165 = get_series("Q165")
+    s166 = get_series("Q166")
 
     df["supp"] = np.where(
         ((s165=="I do not take vitamins or minerals.") | (s165=="")) &
