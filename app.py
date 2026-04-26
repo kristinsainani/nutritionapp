@@ -254,7 +254,7 @@ def process_dairy_types(df):
     df.loc[s.str.contains("Non fat", na=False), "milktype"] = 1
     df.loc[s.str.contains("Low fat", na=False), "milktype"] = 2
     df.loc[s.str.contains("Regular", na=False), "milktype"] = 3
-    df.loc[s.str.contains("Non-dairy [soy milk]", na=False), "milktype"] = 4
+    df.loc[s.str.contains("Non-dairy [soy milk]", regex=False), "milktype"] = 4
     df.loc[s.str.contains("Non-dairy [almond milk", na=False), "milktype"] = 5
 
     df["milktype"] = df["milktype"].fillna(2)  # default = low fat
