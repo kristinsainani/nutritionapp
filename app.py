@@ -358,34 +358,31 @@ def process_body_metrics(df):
 
     def clean_numeric(col):
         if col in df.columns:
-            s = df[col].astype(str)
-
-            # Extract FIRST numeric value (matches SAS scan behavior)
-            out = s.str.extract(r"(\d+)")[0]
-
-            return pd.to_numeric(out, errors="coerce")
+            return pd.to_numeric(
+                df[col].astype(str).str.extract(r"(\d+)")[0],
+                errors="coerce"
+            )
         else:
             return pd.Series(np.nan, index=df.index)
 
-    # ---- CLEAN INPUTS ----
+    # ---- HEIGHT / WEIGHT ----
     height_in = clean_numeric("Q209")
     weight_lb = clean_numeric("Q210")
 
-    # ---- CONVERT UNITS ----
     df["weightkg"] = weight_lb / 2.2
     df["heightm"] = height_in * 0.0254
 
     # ---- BMI ----
     df["bmi"] = df["weightkg"] / (df["heightm"] ** 2)
 
-    # ---- GENDER ----
-    gender = df["Q230"].astype(str).str.strip().str.upper()
+    # ---- GENDER (ROBUST MATCH) ----
+    s = df["Q230"].astype(str)
 
-    df["gender"] = df["Q230"]
+    df["gender"] = s
 
     df["ismale"] = np.where(
-        gender == "MALE", 1,
-        np.where(gender == "FEMALE", 0, np.nan)
+        s.str.contains("Male", na=False), 1,
+        np.where(s.str.contains("Female", na=False), 0, np.nan)
     )
 
     # ---- AGE ----
