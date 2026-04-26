@@ -337,11 +337,12 @@ def process_body_metrics(df):
     def clean_numeric(col):
         if col in df.columns:
             return pd.to_numeric(
-                df[col].astype(str).str.extract(r"(\d+)")[0],
+                df[col].astype(str).str.extract(r"(\d+\.?\d*)")[0],
                 errors="coerce"
-            )
-        else:
-            return pd.Series(np.nan, index=df.index)
+        )
+    else:
+        return pd.Series(np.nan, index=df.index)
+
 
     # ---- HEIGHT / WEIGHT ----
     height_in = clean_numeric("Q209")
