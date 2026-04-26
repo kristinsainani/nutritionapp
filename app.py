@@ -427,6 +427,14 @@ def process_exercise(df):
 
     return df
 
+def process_body_composition(df):
+    df = df.copy()
+
+    df["BodyFat"] = 1.2 * df["bmi"] + 0.23 * df["age"] - 10.8 * df["ismale"] - 5.4
+    df["FFM"] = df["weightkg"] - (df["weightkg"] * df["BodyFat"] * 0.01)
+
+    return df
+
 if uploaded_file is not None:
     df = read_uploaded_file(uploaded_file)
     df = normalize_qualtrics_columns(df)
@@ -436,6 +444,7 @@ if uploaded_file is not None:
     df = process_dairy_types(df)
     df = process_body_metrics(df)
     df = process_exercise(df)
+    df = process_body_composition(df)
 
     st.write("Preview of uploaded data:")
     st.dataframe(df.head())
