@@ -585,10 +585,10 @@ def process_nutrients(df):
     df["eggsfat"] = num("whegg")*5/7
 
     # ---------------- MILK TYPES ----------------
-    df["milkkcal"] = 0
-    df["milkcho"] = 0
-    df["milkpro"] = 0
-    df["milkfat"] = 0
+    df["milkkcal"] = 0.0
+    df["milkcho"] = 0.0
+    df["milkpro"] = 0.0
+    df["milkfat"] = 0.0
 
     df.loc[df["milktype"] == 1, ["milkkcal","milkcho","milkpro","milkfat"]] = np.column_stack([
         num("milk")*90/7, num("milk")*12/7, num("milk")*8/7, num("milk")*1.5/7
@@ -607,10 +607,10 @@ def process_nutrients(df):
     ])
 
     # ---------------- YOGURT ----------------
-    df["yogkcal"] = 0
-    df["yogcho"] = 0
-    df["yogpro"] = 0
-    df["yogfat"] = 0
+    df["yogkcal"] = 0.0
+    df["yogcho"] = 0.0
+    df["yogpro"] = 0.0
+    df["yogfat"] = 0.0
 
     df.loc[df["yogtype"] == 1, ["yogkcal","yogcho","yogpro","yogfat"]] = np.column_stack([
         num("yogurt")*120/7, num("yogurt")*16/7, num("yogurt")*11/7, 0
@@ -632,9 +632,9 @@ def process_nutrients(df):
     ])
 
     # ---------------- SALAD DRESSING ----------------
-    df["slddrkcal"] = 0
-    df["slddrfat"] = 0
-    df["slddrcho"] = 0
+    df["slddrkcal"] = 0.0
+    df["slddrfat"] = 0.0
+    df["slddrcho"] = 0.0
 
     df.loc[df["slddessingtype"] == 1, ["slddrkcal","slddrfat"]] = np.column_stack([
         num("slddressing")*45/7, num("slddressing")*5/7
