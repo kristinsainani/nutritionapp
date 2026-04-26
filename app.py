@@ -811,65 +811,11 @@ if uploaded_file is not None:
     df = process_nutrients(df)
     df = process_nutrients_part2(df)
 
-    # ===============================
-    # CREATE OUTPUT DATASETS
-    # ===============================
-
-    def create_redcap_dataset(df):
-        df = df.copy()
-
-        cols = [
-            "id","age","gender","ismale","weightkg","heightm","bmi","FFM",
-            "EEE","EI","EI_kg","EA","lowEA_clinical","lowEA_subclinical",
-            "miles_wk","Fruit","NSVeg","StarchVeg","VegAll","Legumes","Grains",
-            "ProFoods","MtPltry","FttyFish","Eggs","Dairy","fluids",
-            "CHO","CHOkg","PRO","PROkg","FAT","FATkg","Fiber",
-            "MealsDay","SnacksDay","Fasting","Skip","Vegetarian","Vegan",
-            "Restrict","RestrictAllergy","Housing","FoodPrep","FoodInsecure",
-            "percep1","percep2","percep3","percep4","percep5",
-            "BarsWk","ProBarsWk","ProDrnkWk","GelChewWk",
-            "chodrnk","caffdrnk",
-            "supp","vitamin","iron","calcium","vitamind",
-            "caffeine","creatine","prewrkout","wtgainer","wtlosssupp",
-            "aasupp","herbotsupp"
-        ]
-
-        cols = [c for c in cols if c in df.columns]
-        return df[cols]
-
-
-def create_allnutrition_dataset(df):
-    df = df.copy()
-
-    drop_cols = [c for c in df.columns if c.startswith("Q")]
-
-    return df.drop(columns=drop_cols, errors="ignore")
-
-    # ===============================
-    # RUN OUTPUT CREATION
-    # ===============================
-
     df_redcap = create_redcap_dataset(df)
     df_all = create_allnutrition_dataset(df)
 
-    # ===============================
-    # DISPLAY
-    # ===============================
-
-    st.write("Preview of uploaded data:")
-    st.dataframe(df.head())
-
-    st.write(df[["KcalTotal","CHO","FAT","PRO","Fiber","EA","EI"]].head())
-
     st.write("REDCap dataset")
     st.dataframe(df_redcap.head())
-
-    st.write("Full dataset (cleaned)")
-    st.dataframe(df_all.head())
-
-    # ===============================
-    # DOWNLOAD
-    # ===============================
 
     st.download_button(
         "Download REDCap dataset",
