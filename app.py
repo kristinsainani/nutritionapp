@@ -244,68 +244,68 @@ def create_food_variables(df):
 
     return df
 
+
 def process_dairy_types(df):
     df = df.copy()
 
     # ---- Milk ----
-    s = df["Q64"].astype(str)
+    s = df.get("Q64", "").astype(str).str.lower()
 
     df["milktype"] = np.nan
-    df.loc[s.str.contains("Non fat", na=False), "milktype"] = 1
-    df.loc[s.str.contains("Low fat", na=False), "milktype"] = 2
-    df.loc[s.str.contains("Regular", na=False), "milktype"] = 3
-    df.loc[s.str.contains("soy milk", na=False), "milktype"] = 4
-    df.loc[s.str.contains("almond milk", na=False), "milktype"] = 5
+    df.loc[s.str.contains("non fat", na=False), "milktype"] = 1
+    df.loc[s.str.contains("low fat", na=False), "milktype"] = 2
+    df.loc[s.str.contains("regular", na=False), "milktype"] = 3
+    df.loc[s.str.contains("soy", na=False), "milktype"] = 4
+    df.loc[s.str.contains("almond", na=False), "milktype"] = 5
 
     df["milktype"] = df["milktype"].fillna(2)
 
     # ---- Plain yogurt ----
-    s = df["Q65"].astype(str)
+    s = df.get("Q65", "").astype(str).str.lower()
 
     df["yogtype"] = np.nan
-    df.loc[s.str.contains("Non fat yogurt", na=False), "yogtype"] = 1
-    df.loc[s.str.contains("Low fat yogurt", na=False), "yogtype"] = 2
-    df.loc[s.str.contains("Regular (full-fat) yogurt", na=False), "yogtype"] = 3
-    df.loc[s.str.contains("Non-dairy yogurt", na=False), "yogtype"] = 4
-    df.loc[s.str.contains("Greek yogurt (non fat", na=False), "yogtype"] = 5
-    df.loc[s.str.contains("Greek yogurt (regular", na=False), "yogtype"] = 6
+    df.loc[s.str.contains("non fat yogurt", na=False), "yogtype"] = 1
+    df.loc[s.str.contains("low fat yogurt", na=False), "yogtype"] = 2
+    df.loc[s.str.contains("regular", na=False) & s.str.contains("yogurt", na=False), "yogtype"] = 3
+    df.loc[s.str.contains("non-dairy", na=False), "yogtype"] = 4
+    df.loc[s.str.contains("greek", na=False) & s.str.contains("non fat", na=False), "yogtype"] = 5
+    df.loc[s.str.contains("greek", na=False) & s.str.contains("regular", na=False), "yogtype"] = 6
 
     df["yogtype"] = df["yogtype"].fillna(2)
 
     # ---- Flavored yogurt ----
-    s = df["Q286"].astype(str)
+    s = df.get("Q286", "").astype(str).str.lower()
 
     df["flvyogtype"] = np.nan
-    df.loc[s.str.contains("Non fat yogurt", na=False), "flvyogtype"] = 1
-    df.loc[s.str.contains("Low fat yogurt", na=False), "flvyogtype"] = 2
-    df.loc[s.str.contains("Non-dairy yogurt", na=False), "flvyogtype"] = 3
-    df.loc[s.str.contains("Greek yogurt", na=False), "flvyogtype"] = 4
-    df.loc[s.str.contains("no sugar added", na=False), "flvyogtype"] = 5
+    df.loc[s.str.contains("non fat", na=False), "flvyogtype"] = 1
+    df.loc[s.str.contains("low fat", na=False), "flvyogtype"] = 2
+    df.loc[s.str.contains("non-dairy", na=False), "flvyogtype"] = 3
+    df.loc[s.str.contains("greek", na=False), "flvyogtype"] = 4
+    df.loc[s.str.contains("no sugar", na=False) | s.str.contains("diet", na=False), "flvyogtype"] = 5
 
     df["flvyogtype"] = df["flvyogtype"].fillna(2)
 
     # ---- Cheese ----
-    s = df["Q179"].astype(str)
+    s = df.get("Q179", "").astype(str).str.lower()
 
     df["cheesetype"] = np.nan
-    df.loc[s.str.contains("Regular dairy cheese", na=False), "cheesetype"] = 1
-    df.loc[s.str.contains("Reduced fat or light", na=False), "cheesetype"] = 2
-    df.loc[s.str.contains("Non-dairy cheese", na=False), "cheesetype"] = 3
+    df.loc[s.str.contains("regular", na=False), "cheesetype"] = 1
+    df.loc[s.str.contains("reduced", na=False) | s.str.contains("light", na=False), "cheesetype"] = 2
+    df.loc[s.str.contains("non-dairy", na=False), "cheesetype"] = 3
 
     df["cheesetype"] = df["cheesetype"].fillna(1)
 
     # ---- Salad dressing ----
-    s = df.get("Q156_0001", "").astype(str)
+    s = df.get("Q156_0001", df.get("Q156", "")).astype(str).str.lower()
 
     df["slddessingtype"] = np.nan
-    df.loc[s.str.contains("Regular", na=False), "slddessingtype"] = 1
-    df.loc[s.str.contains("Reduced-fat", na=False), "slddessingtype"] = 2
-    df.loc[s.str.contains("Fat-free", na=False), "slddessingtype"] = 3
+    df.loc[s.str.contains("regular", na=False), "slddessingtype"] = 1
+    df.loc[s.str.contains("reduced", na=False), "slddessingtype"] = 2
+    df.loc[s.str.contains("fat-free", na=False) | s.str.contains("non fat", na=False), "slddessingtype"] = 3
 
     df["slddessingtype"] = df["slddessingtype"].fillna(1)
 
     return df
-
 
 if uploaded_file is not None:
     df = read_uploaded_file(uploaded_file)
