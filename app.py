@@ -584,27 +584,44 @@ def process_nutrients(df):
     df["eggspro"] = (num("whegg")*6 + num("eggwt")*4)/7
     df["eggsfat"] = num("whegg")*5/7
 
-    # ---------------- MILK TYPES ----------------
+    # ---------------- MILK ----------------
     df["milkkcal"] = 0.0
     df["milkcho"] = 0.0
     df["milkpro"] = 0.0
     df["milkfat"] = 0.0
 
-    df.loc[df["milktype"] == 1, ["milkkcal","milkcho","milkpro","milkfat"]] = np.column_stack([
-        num("milk")*90/7, num("milk")*12/7, num("milk")*8/7, num("milk")*1.5/7
-    ])
-    df.loc[df["milktype"] == 2, ["milkkcal","milkcho","milkpro","milkfat"]] = np.column_stack([
-        num("milk")*120/7, num("milk")*12/7, num("milk")*8/7, num("milk")*5/7
-    ])
-    df.loc[df["milktype"] == 3, ["milkkcal","milkcho","milkpro","milkfat"]] = np.column_stack([
-        num("milk")*150/7, num("milk")*12/7, num("milk")*8/7, num("milk")*8/7
-    ])
-    df.loc[df["milktype"] == 4, ["milkkcal","milkcho","milkpro","milkfat"]] = np.column_stack([
-        num("milk")*100/7, num("milk")*8/7, num("milk")*7/7, num("milk")*4/7
-    ])
-    df.loc[df["milktype"] == 5, ["milkkcal","milkcho","milkpro","milkfat"]] = np.column_stack([
-        num("milk")*50/7, num("milk")*5/7, num("milk")*1/7, num("milk")*3/7
-    ])
+    milk = num("milk")
+
+    mask = df["milktype"] == 1
+    df.loc[mask, "milkkcal"] = milk[mask] * 90/7
+    df.loc[mask, "milkcho"] = milk[mask] * 12/7
+    df.loc[mask, "milkpro"] = milk[mask] * 8/7
+    df.loc[mask, "milkfat"] = milk[mask] * 1.5/7
+
+    mask = df["milktype"] == 2
+    df.loc[mask, "milkkcal"] = milk[mask] * 120/7
+    df.loc[mask, "milkcho"] = milk[mask] * 12/7
+    df.loc[mask, "milkpro"] = milk[mask] * 8/7
+    df.loc[mask, "milkfat"] = milk[mask] * 5/7
+
+    mask = df["milktype"] == 3
+    df.loc[mask, "milkkcal"] = milk[mask] * 150/7
+    df.loc[mask, "milkcho"] = milk[mask] * 12/7
+    df.loc[mask, "milkpro"] = milk[mask] * 8/7
+    df.loc[mask, "milkfat"] = milk[mask] * 8/7
+
+    mask = df["milktype"] == 4
+    df.loc[mask, "milkkcal"] = milk[mask] * 100/7
+    df.loc[mask, "milkcho"] = milk[mask] * 8/7
+    df.loc[mask, "milkpro"] = milk[mask] * 7/7
+    df.loc[mask, "milkfat"] = milk[mask] * 4/7
+
+    mask = df["milktype"] == 5
+    df.loc[mask, "milkkcal"] = milk[mask] * 50/7
+    df.loc[mask, "milkcho"] = milk[mask] * 5/7
+    df.loc[mask, "milkpro"] = milk[mask] * 1/7
+    df.loc[mask, "milkfat"] = milk[mask] * 3/7
+
 
     # ---------------- YOGURT ----------------
     df["yogkcal"] = 0.0
@@ -612,40 +629,65 @@ def process_nutrients(df):
     df["yogpro"] = 0.0
     df["yogfat"] = 0.0
 
-    df.loc[df["yogtype"] == 1, ["yogkcal","yogcho","yogpro","yogfat"]] = np.column_stack([
-        num("yogurt")*120/7, num("yogurt")*16/7, num("yogurt")*11/7, 0
-    ])
-    df.loc[df["yogtype"] == 2, ["yogkcal","yogcho","yogpro","yogfat"]] = np.column_stack([
-        num("yogurt")*150/7, num("yogurt")*17/7, num("yogurt")*13/7, num("yogurt")*4/7
-    ])
-    df.loc[df["yogtype"] == 3, ["yogkcal","yogcho","yogpro","yogfat"]] = np.column_stack([
-        num("yogurt")*150/7, num("yogurt")*11/7, num("yogurt")*9/7, num("yogurt")*8/7
-    ])
-    df.loc[df["yogtype"] == 4, ["yogkcal","yogcho","yogpro","yogfat"]] = np.column_stack([
-        num("yogurt")*162/7, num("yogurt")*13/7, num("yogurt")*6/7, num("yogurt")*4/7
-    ])
-    df.loc[df["yogtype"] == 5, ["yogkcal","yogcho","yogpro","yogfat"]] = np.column_stack([
-        num("yogurt")*179/7, num("yogurt")*10/7, num("yogurt")*25/7, num("yogurt")*5/7
-    ])
-    df.loc[df["yogtype"] == 6, ["yogkcal","yogcho","yogpro","yogfat"]] = np.column_stack([
-        num("yogurt")*238/7, num("yogurt")*10/7, num("yogurt")*22/7, num("yogurt")*12/7
-    ])
+    yog = num("yogurt")
+
+    mask = df["yogtype"] == 1
+    df.loc[mask, "yogkcal"] = yog[mask] * 120/7
+    df.loc[mask, "yogcho"] = yog[mask] * 16/7
+    df.loc[mask, "yogpro"] = yog[mask] * 11/7
+    df.loc[mask, "yogfat"] = 0
+
+    mask = df["yogtype"] == 2
+    df.loc[mask, "yogkcal"] = yog[mask] * 150/7
+    df.loc[mask, "yogcho"] = yog[mask] * 17/7
+    df.loc[mask, "yogpro"] = yog[mask] * 13/7
+    df.loc[mask, "yogfat"] = yog[mask] * 4/7
+
+    mask = df["yogtype"] == 3
+    df.loc[mask, "yogkcal"] = yog[mask] * 150/7
+    df.loc[mask, "yogcho"] = yog[mask] * 11/7
+    df.loc[mask, "yogpro"] = yog[mask] * 9/7
+    df.loc[mask, "yogfat"] = yog[mask] * 8/7
+
+    mask = df["yogtype"] == 4
+    df.loc[mask, "yogkcal"] = yog[mask] * 162/7
+    df.loc[mask, "yogcho"] = yog[mask] * 13/7
+    df.loc[mask, "yogpro"] = yog[mask] * 6/7
+    df.loc[mask, "yogfat"] = yog[mask] * 4/7
+
+    mask = df["yogtype"] == 5
+    df.loc[mask, "yogkcal"] = yog[mask] * 179/7
+    df.loc[mask, "yogcho"] = yog[mask] * 10/7
+    df.loc[mask, "yogpro"] = yog[mask] * 25/7
+    df.loc[mask, "yogfat"] = yog[mask] * 5/7
+
+    mask = df["yogtype"] == 6
+    df.loc[mask, "yogkcal"] = yog[mask] * 238/7
+    df.loc[mask, "yogcho"] = yog[mask] * 10/7
+    df.loc[mask, "yogpro"] = yog[mask] * 22/7
+    df.loc[mask, "yogfat"] = yog[mask] * 12/7
+
 
     # ---------------- SALAD DRESSING ----------------
     df["slddrkcal"] = 0.0
     df["slddrfat"] = 0.0
     df["slddrcho"] = 0.0
 
-    df.loc[df["slddessingtype"] == 1, ["slddrkcal","slddrfat"]] = np.column_stack([
-        num("slddressing")*45/7, num("slddressing")*5/7
-    ])
-    df.loc[df["slddessingtype"] == 2, ["slddrkcal","slddrfat"]] = np.column_stack([
-        num("slddressing")*22.5/7, num("slddressing")*2.5/7
-    ])
-    df.loc[df["slddessingtype"] == 3, ["slddrkcal","slddrcho"]] = np.column_stack([
-        num("slddressing")*20/7, num("slddressing")*5/7
-    ])
+    sld = num("slddressing")
 
+    mask = df["slddessingtype"] == 1
+    df.loc[mask, "slddrkcal"] = sld[mask] * 45/7
+    df.loc[mask, "slddrfat"] = sld[mask] * 5/7
+
+    mask = df["slddessingtype"] == 2
+    df.loc[mask, "slddrkcal"] = sld[mask] * 22.5/7
+    df.loc[mask, "slddrfat"] = sld[mask] * 2.5/7
+
+    mask = df["slddessingtype"] == 3
+    df.loc[mask, "slddrkcal"] = sld[mask] * 20/7
+    df.loc[mask, "slddrcho"] = sld[mask] * 5/7
+    df.loc[mask, "slddrfat"] = 0
+  
     # ---------------- EXTRA FATS ----------------
     df["extrafatskcal"] = (
         num("vegoil")*135/7 + num("nutbtr")*94/7 + num("cocoilbt")*120/7 +
