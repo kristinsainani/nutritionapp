@@ -810,10 +810,94 @@ if uploaded_file is not None:
     df = process_behavior_and_supplements(df)
     df = process_nutrients(df)
     df = process_nutrients_part2(df)
-    
+
+    # ===============================
+    # CREATE OUTPUT DATASETS
+    # ===============================
+
+    def create_redcap_dataset(df):
+        df = df.copy()
+
+        cols = [
+            "id","age","gender","ismale","weightkg","heightm","bmi","FFM",
+            "EEE","EI","EI_kg","EA","lowEA_clinical","lowEA_subclinical",
+            "miles_wk","Fruit","NSVeg","StarchVeg","VegAll","Legumes","Grains",
+            "ProFoods","MtPltry","FttyFish","Eggs","Dairy","fluids",
+            "CHO","CHOkg","PRO","PROkg","FAT","FATkg","Fiber",
+            "MealsDay","SnacksDay","Fasting","Skip","Vegetarian","Vegan",
+            "Restrict","RestrictAllergy","Housing","FoodPrep","FoodInsecure",
+            "percep1","percep2","percep3","percep4","percep5",
+            "BarsWk","ProBarsWk","ProDrnkWk","GelChewWk",
+            "chodrnk","caffdrnk",
+            "supp","vitamin","iron","calcium","vitamind",
+            "caffeine","creatine","prewrkout","wtgainer","wtlosssupp",
+            "aasupp","herbotsupp"
+        ]
+
+        cols = [c for c in cols if c in df.columns]
+        return df[cols]
+
+
+    def create_allnutrition_dataset(df):
+        df = df.copy()
+
+        drop_cols = [
+            "RecordedDate","Q182","Q200","Q230","Q209","Q210","Q212","Q213",
+            "Q214","Q215","Q70","Q218","Q219","Q221","Q224","Q223","Q228",
+            "Q229","Q231","Q255","Q256","Q152","Q153","Q154","Q155","Q156",
+            "Q157","Q158","Q232","Q233","Q235","Q236","Q237","Q244",
+            "Q160","Q161","Q162","Q240","Q241","Q242","Q165","Q166",
+            "Q10","Q11","Q12","Q276","Q149","Q146","Q1","Q150","Q24",
+            "Q23","Q148","Q163","Q164","Q27","Q28","Q29","Q177","Q178",
+            "Q33","Q169","Q64","Q170","Q65","Q168","Q286","Q171","Q179",
+            "Q35","Q257","Q261","Q262","Q263","Q264","Q265","Q266",
+            "Q267","Q268","Q269","Q270","Q271","Q159","Q38","Q130",
+            "Q134","Q42","Q61","Q62","Q63","Q43","Q60","Q278","Q279",
+            "Q280","Q52","Q272","Q273","Q275","Q125","Q282","Q281",
+            "Q284","Q285","Q55","Q56","Q120","Q57","Q138","Q141",
+            "Q245","Q248","Q250","Q251","Q252","Q253","Q254","Q26",
+            "Q161_0001","Q157_0001","Q156_0001","Q158_0001","Q160_0001",
+            "Q162_0001","Q165_0001"
+        ]
+
+        drop_cols = [c for c in drop_cols if c in df.columns]
+        return df.drop(columns=drop_cols)
+
+
+    # ===============================
+    # RUN OUTPUT CREATION
+    # ===============================
+
+    df_redcap = create_redcap_dataset(df)
+    df_all = create_allnutrition_dataset(df)
+
+    # ===============================
+    # DISPLAY
+    # ===============================
+
     st.write("Preview of uploaded data:")
     st.dataframe(df.head())
+
     st.write(df[["KcalTotal","CHO","FAT","PRO","Fiber","EA","EI"]].head())
 
+    st.write("REDCap dataset")
+    st.dataframe(df_redcap.head())
 
+    st.write("Full dataset (cleaned)")
+    st.dataframe(df_all.head())
 
+    # ===============================
+    # DOWNLOAD
+    # ===============================
+
+    st.download_button(
+        "Download REDCap dataset",
+        df_redcap.to_csv(index=False),
+        "redcap.csv"
+    )
+
+    st.download_button(
+        "Download full dataset",
+        df_all.to_csv(index=False),
+        "allnutrition.csv"
+    )
