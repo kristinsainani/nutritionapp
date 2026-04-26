@@ -1061,22 +1061,27 @@ def process_nutrients(df):
 
     # ---------------- EEE ----------------
     df["eee"] = (
-    df["hrsrunning"] * df["runMETS"] +
-    df["weightlifthrs"] * df["weightliftMETS"] +
-    df["aquajoghrs"] * df["aquajogMETS"] +
-    df["bikehrs"] * df["bikeMETS"] +
-    df["ellipticalhrs"] * df["ellipticalMETS"]
+        df["hrsrunning"] * df["runMETS"] +
+        df["weightlifthrs"] * df["weightliftMETS"] +
+        df["aquajoghrs"] * df["aquajogMETS"] +
+        df["bikehrs"] * df["bikeMETS"] +
+        df["ellipticalhrs"] * df["ellipticalMETS"]
     ) * df["weightkg"]
-
-    # ---------------- EA ----------------
-    df["ea"] = (df["kcaltotal"] - df["eee"]) / num("ffm")
-    df.loc[df["kcaltotal"] == 0, "ea"] = np.nan
 
     # ---------------- EI ----------------
     df["ei"] = df["kcaltotal"]
     df.loc[df["ei"] == 0, "ei"] = np.nan
 
-    df["ei_kg"] = df["ei"] / num("weightkg")
+    # FIX: avoid division by zero
+    df["ei_kg"] = df["ei"] / df["weightkg"]
+    df.loc[df["weightkg"] == 0, "ei_kg"] = np.nan
+
+    # ---------------- EA ----------------
+    df["ea"] = (df["kcaltotal"] - df["eee"]) / df["ffm"]
+
+    # FIX: avoid division by zero
+    df.loc[df["ffm"] == 0, "ea"] = np.nan
+    df.loc[df["kcaltotal"] == 0, "ea"] = np.nan
     
     # ---------------- FLAGS ----------------
     df["lowea_clinical"] = 0
