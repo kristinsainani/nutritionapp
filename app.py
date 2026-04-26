@@ -813,6 +813,7 @@ if uploaded_file is not None:
     
     st.write("Preview of uploaded data:")
     st.dataframe(df.head())
+    st.write(df[["KcalTotal","CHO","FAT","PRO","Fiber","EA","EI"]].head())
 
 
 
