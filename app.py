@@ -796,7 +796,7 @@ def process_nutrients_part2(df):
     df.loc[female & (df["EA"] >= 30) & (df["EA"] < 45), "lowEA_subclinical"] = 1
 
     return df
-
+    
 # ===============================
 # OUTPUT DATASET FUNCTIONS
 # ===============================
@@ -826,9 +826,7 @@ def create_redcap_dataset(df):
 
 def create_allnutrition_dataset(df):
     df = df.copy()
-
     drop_cols = [c for c in df.columns if c.startswith("Q")]
-
     return df.drop(columns=drop_cols, errors="ignore")
 
 
@@ -840,6 +838,11 @@ if uploaded_file is not None:
     df = read_uploaded_file(uploaded_file)
     df = normalize_qualtrics_columns(df)
 
+    # 👇 PREVIEW UPLOADED FILE
+    st.write("Preview of uploaded file")
+    st.dataframe(df.head())
+
+    # PROCESSING
     df = process_servings(df)
     df = create_food_variables(df)
     df = process_dairy_types(df)
@@ -853,19 +856,19 @@ if uploaded_file is not None:
     df_redcap = create_redcap_dataset(df)
     df_all = create_allnutrition_dataset(df)
 
-    # DISPLAY
-    st.write("REDCap dataset")
+    # 👇 PREVIEW FINAL REDCAP DATA
+    st.write("REDCap dataset (final output)")
     st.dataframe(df_redcap.head())
 
-    # DOWNLOAD BUTTONS
+    # 👇 DOWNLOADS
     st.download_button(
         "Download REDCap dataset",
         df_redcap.to_csv(index=False),
-        "redcap.csv"
+        "redcapnutrition.csv"
     )
 
     st.download_button(
-        "Download full dataset",
+        "Download full dataset (allnutrition)",
         df_all.to_csv(index=False),
         "allnutrition.csv"
     )
