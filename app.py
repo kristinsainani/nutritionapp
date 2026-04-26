@@ -89,26 +89,54 @@ def process_servings(df):
     df = df.copy()
 
     vars_list = [
+        # --- main food array ---
         "Q10","Q11","Q12","Q149","Q146","Q1","Q150","Q24","Q165_0001","Q23",
         "Q148","Q161_0001","Q162_0001","Q163","Q164","Q27","Q28","Q29","Q177",
         "Q178","Q33","Q169","Q170","Q168","Q171","Q35","Q261","Q262","Q263",
         "Q264","Q265","Q266","Q267","Q268","Q26","Q270","Q271","Q160_0001",
         "Q158_0001","Q134","Q42","Q61","Q62","Q63","Q43","Q60","Q278","Q279",
         "Q280","Q276","Q257","Q125","Q281","Q282","Q285","Q284","Q273","Q272",
-        "Q52","Q269","Q289","Q290","Q291","Q292", "Q70","Q218","Q221","Q223",
-        "Q209","Q210", "Q230", "Q200", "Q212","Q213","Q215","Q219","Q224","Q225",
-        "Q152","Q153","Q154","Q155","Q157","Q158","Q232","Q240","Q241","Q245",
-        "Q165","Q166"
+        "Q52","Q269","Q289","Q290","Q291","Q292",
+
+        # --- exercise hours ---
+        "Q70","Q218","Q221","Q223",
+
+        # --- run / MET logic ---
+        "Q212","Q213","Q215","Q219","Q224","Q225",
+
+        # --- demographics ---
+        "Q209","Q210","Q230","Q200",
+
+        # --- behavior ---
+        "Q152","Q153","Q154","Q155","Q157","Q158",
+        "Q232","Q240","Q241","Q245",
+
+        # --- supplements ---
+        "Q165","Q166",
+
+        # --- type variables ---
+        "Q64","Q65","Q286","Q179","Q156_0001",
+
+        # --- ID ---
+        "Q182"
     ]
 
-    for col in vars_list:
-        if col not in df.columns:
-            continue
+    # --- STEP 1: ensure all variables exist ---
+    for v in vars_list:
+        if v not in df.columns:
+            df[v] = 0
 
+    # --- STEP 2: clean / convert variables ---
+    for col in vars_list:
         s = df[col].astype(str).str.upper()
 
         # Start with NaN
         out = pd.Series(np.nan, index=df.index)
+
+        # (your recoding logic goes here)
+        # e.g. ranges, text → numeric, etc.
+
+        df[col] = out
 
         # Apply rules (order matters, same as SAS)
 
@@ -379,13 +407,12 @@ def process_exercise(df):
         else:
             return pd.Series(0, index=df.index)
 
-    # ---- HOURS / WEEK (from Qualtrics) ----
-    # Adjust these Q-codes ONLY if your survey uses different ones
-    df["hrsrunning"] = num("Q60")
-    df["weightlifthrs"] = num("Q61")
-    df["aquajoghrs"] = num("Q62")
-    df["bikehrs"] = num("Q63")
-    df["ellipticalhrs"] = num("Q43")
+    # ---- HOURS / WEEK (MATCHES SAS EXACTLY) ----
+    df["hrsrunning"] = num("Q70")
+    df["weightlifthrs"] = num("Q218")
+    df["aquajoghrs"] = num("Q221")
+    df["bikehrs"] = num("Q223")
+    df["ellipticalhrs"] = num("Q223")
 
     # ---- METS (constants; SAS-style) ----
     df["runmets"] = 9.8
@@ -584,88 +611,187 @@ def process_nutrients(df):
     df["eggspro"] = (num("whegg")*6 + num("eggwt")*4)/7
     df["eggsfat"] = num("whegg")*5/7
 
-    # ---------------- MILK ----------------
+    # ---------------- MILK + FLAVORED MILK ----------------
     df["milkkcal"] = 0.0
     df["milkcho"] = 0.0
     df["milkpro"] = 0.0
     df["milkfat"] = 0.0
+    df["flvmilkkcal"] = 0.0
+    df["flvmilkcho"] = 0.0
+    df["flvmilkpro"] = 0.0
+    df["flvmilkfat"] = 0.0
 
     milk = num("milk")
+    flvmilk = num("flvmilk")
 
     mask = df["milktype"] == 1
     df.loc[mask, "milkkcal"] = milk[mask] * 90/7
     df.loc[mask, "milkcho"] = milk[mask] * 12/7
     df.loc[mask, "milkpro"] = milk[mask] * 8/7
     df.loc[mask, "milkfat"] = milk[mask] * 1.5/7
+    df.loc[mask, "flvmilkkcal"] = flvmilk[mask] * 168/7
+    df.loc[mask, "flvmilkcho"] = flvmilk[mask] * 34/7
+    df.loc[mask, "flvmilkpro"] = flvmilk[mask] * 8/7
+    df.loc[mask, "flvmilkfat"] = flvmilk[mask] * 0/7
 
     mask = df["milktype"] == 2
     df.loc[mask, "milkkcal"] = milk[mask] * 120/7
     df.loc[mask, "milkcho"] = milk[mask] * 12/7
     df.loc[mask, "milkpro"] = milk[mask] * 8/7
     df.loc[mask, "milkfat"] = milk[mask] * 5/7
+    df.loc[mask, "flvmilkkcal"] = flvmilk[mask] * 160/7
+    df.loc[mask, "flvmilkcho"] = flvmilk[mask] * 26/7
+    df.loc[mask, "flvmilkpro"] = flvmilk[mask] * 9/7
+    df.loc[mask, "flvmilkfat"] = flvmilk[mask] * 3/7
 
     mask = df["milktype"] == 3
     df.loc[mask, "milkkcal"] = milk[mask] * 150/7
     df.loc[mask, "milkcho"] = milk[mask] * 12/7
     df.loc[mask, "milkpro"] = milk[mask] * 8/7
     df.loc[mask, "milkfat"] = milk[mask] * 8/7
+    df.loc[mask, "flvmilkkcal"] = flvmilk[mask] * 208/7
+    df.loc[mask, "flvmilkcho"] = flvmilk[mask] * 26/7
+    df.loc[mask, "flvmilkpro"] = flvmilk[mask] * 8/7
+    df.loc[mask, "flvmilkfat"] = flvmilk[mask] * 8/7
 
     mask = df["milktype"] == 4
     df.loc[mask, "milkkcal"] = milk[mask] * 100/7
     df.loc[mask, "milkcho"] = milk[mask] * 8/7
     df.loc[mask, "milkpro"] = milk[mask] * 7/7
     df.loc[mask, "milkfat"] = milk[mask] * 4/7
+    df.loc[mask, "flvmilkkcal"] = flvmilk[mask] * 154/7
+    df.loc[mask, "flvmilkcho"] = flvmilk[mask] * 24/7
+    df.loc[mask, "flvmilkpro"] = flvmilk[mask] * 6/7
+    df.loc[mask, "flvmilkfat"] = flvmilk[mask] * 4/7
 
     mask = df["milktype"] == 5
     df.loc[mask, "milkkcal"] = milk[mask] * 50/7
     df.loc[mask, "milkcho"] = milk[mask] * 5/7
     df.loc[mask, "milkpro"] = milk[mask] * 1/7
     df.loc[mask, "milkfat"] = milk[mask] * 3/7
+    df.loc[mask, "flvmilkkcal"] = flvmilk[mask] * 120/7
+    df.loc[mask, "flvmilkcho"] = flvmilk[mask] * 23/7
+    df.loc[mask, "flvmilkpro"] = flvmilk[mask] * 2/7
+    df.loc[mask, "flvmilkfat"] = flvmilk[mask] * 3/7
 
-
-    # ---------------- YOGURT ----------------
+    # ---------------- YOGURT + FLAVORED YOGURT ----------------
     df["yogkcal"] = 0.0
     df["yogcho"] = 0.0
     df["yogpro"] = 0.0
     df["yogfat"] = 0.0
+    df["flvyogkcal"] = 0.0
+    df["flvyogcho"] = 0.0
+    df["flvyogpro"] = 0.0
+    df["flvyogfat"] = 0.0
 
-    yog = num("yogurt")
+    yogurt = num("yogurt")
+    flvyogurt = num("flvyogurt")
 
     mask = df["yogtype"] == 1
-    df.loc[mask, "yogkcal"] = yog[mask] * 120/7
-    df.loc[mask, "yogcho"] = yog[mask] * 16/7
-    df.loc[mask, "yogpro"] = yog[mask] * 11/7
-    df.loc[mask, "yogfat"] = 0
+    df.loc[mask, "yogkcal"] = yogurt[mask] * 120/7
+    df.loc[mask, "yogcho"] = yogurt[mask] * 16/7
+    df.loc[mask, "yogpro"] = yogurt[mask] * 11/7
+    df.loc[mask, "yogfat"] = 0.0
 
     mask = df["yogtype"] == 2
-    df.loc[mask, "yogkcal"] = yog[mask] * 150/7
-    df.loc[mask, "yogcho"] = yog[mask] * 17/7
-    df.loc[mask, "yogpro"] = yog[mask] * 13/7
-    df.loc[mask, "yogfat"] = yog[mask] * 4/7
+    df.loc[mask, "yogkcal"] = yogurt[mask] * 150/7
+    df.loc[mask, "yogcho"] = yogurt[mask] * 17/7
+    df.loc[mask, "yogpro"] = yogurt[mask] * 13/7
+    df.loc[mask, "yogfat"] = yogurt[mask] * 4/7
 
     mask = df["yogtype"] == 3
-    df.loc[mask, "yogkcal"] = yog[mask] * 150/7
-    df.loc[mask, "yogcho"] = yog[mask] * 11/7
-    df.loc[mask, "yogpro"] = yog[mask] * 9/7
-    df.loc[mask, "yogfat"] = yog[mask] * 8/7
+    df.loc[mask, "yogkcal"] = yogurt[mask] * 150/7
+    df.loc[mask, "yogcho"] = yogurt[mask] * 11/7
+    df.loc[mask, "yogpro"] = yogurt[mask] * 9/7
+    df.loc[mask, "yogfat"] = yogurt[mask] * 8/7
 
     mask = df["yogtype"] == 4
-    df.loc[mask, "yogkcal"] = yog[mask] * 162/7
-    df.loc[mask, "yogcho"] = yog[mask] * 13/7
-    df.loc[mask, "yogpro"] = yog[mask] * 6/7
-    df.loc[mask, "yogfat"] = yog[mask] * 4/7
+    df.loc[mask, "yogkcal"] = yogurt[mask] * 162/7
+    df.loc[mask, "yogcho"] = yogurt[mask] * 13/7
+    df.loc[mask, "yogpro"] = yogurt[mask] * 6/7
+    df.loc[mask, "yogfat"] = yogurt[mask] * 4/7
 
     mask = df["yogtype"] == 5
-    df.loc[mask, "yogkcal"] = yog[mask] * 179/7
-    df.loc[mask, "yogcho"] = yog[mask] * 10/7
-    df.loc[mask, "yogpro"] = yog[mask] * 25/7
-    df.loc[mask, "yogfat"] = yog[mask] * 5/7
+    df.loc[mask, "yogkcal"] = yogurt[mask] * 179/7
+    df.loc[mask, "yogcho"] = yogurt[mask] * 10/7
+    df.loc[mask, "yogpro"] = yogurt[mask] * 25/7
+    df.loc[mask, "yogfat"] = yogurt[mask] * 5/7
 
     mask = df["yogtype"] == 6
-    df.loc[mask, "yogkcal"] = yog[mask] * 238/7
-    df.loc[mask, "yogcho"] = yog[mask] * 10/7
-    df.loc[mask, "yogpro"] = yog[mask] * 22/7
-    df.loc[mask, "yogfat"] = yog[mask] * 12/7
+    df.loc[mask, "yogkcal"] = yogurt[mask] * 238/7
+    df.loc[mask, "yogcho"] = yogurt[mask] * 10/7
+    df.loc[mask, "yogpro"] = yogurt[mask] * 22/7
+    df.loc[mask, "yogfat"] = yogurt[mask] * 12/7
+
+    mask = df["flvyogtype"] == 1
+    df.loc[mask, "flvyogkcal"] = flvyogurt[mask] * 191/7
+    df.loc[mask, "flvyogcho"] = flvyogurt[mask] * 42/7
+    df.loc[mask, "flvyogpro"] = flvyogurt[mask] * 7/7
+    df.loc[mask, "flvyogfat"] = 0.0
+
+    mask = df["flvyogtype"] == 2
+    df.loc[mask, "flvyogkcal"] = flvyogurt[mask] * 208/7
+    df.loc[mask, "flvyogcho"] = flvyogurt[mask] * 34/7
+    df.loc[mask, "flvyogpro"] = flvyogurt[mask] * 12/7
+    df.loc[mask, "flvyogfat"] = flvyogurt[mask] * 3/7
+
+    mask = df["flvyogtype"] == 3
+    df.loc[mask, "flvyogkcal"] = flvyogurt[mask] * 216/7
+    df.loc[mask, "flvyogcho"] = flvyogurt[mask] * 36/7
+    df.loc[mask, "flvyogpro"] = flvyogurt[mask] * 7/7
+    df.loc[mask, "flvyogfat"] = flvyogurt[mask] * 4/7
+
+    mask = df["flvyogtype"] == 4
+    df.loc[mask, "flvyogkcal"] = flvyogurt[mask] * 233/7
+    df.loc[mask, "flvyogcho"] = flvyogurt[mask] * 23/7
+    df.loc[mask, "flvyogpro"] = flvyogurt[mask] * 21/7
+    df.loc[mask, "flvyogfat"] = flvyogurt[mask] * 6/7
+
+    mask = df["flvyogtype"] == 5
+    df.loc[mask, "flvyogkcal"] = flvyogurt[mask] * 90/7
+    df.loc[mask, "flvyogcho"] = flvyogurt[mask] * 12/7
+    df.loc[mask, "flvyogpro"] = flvyogurt[mask] * 8/7
+    df.loc[mask, "flvyogfat"] = 0.0
+
+    # ---------------- CHEESE + COTTAGE CHEESE ----------------
+    df["cheesekcal"] = 0.0
+    df["cheesepro"] = 0.0
+    df["cheesefat"] = 0.0
+    df["cheesecho"] = 0.0
+
+    cheese = num("cheese")
+
+    mask = df["cheesetype"] == 1
+    df.loc[mask, "cheesekcal"] = cheese[mask] * 100/7
+    df.loc[mask, "cheesepro"] = cheese[mask] * 7/7
+    df.loc[mask, "cheesefat"] = cheese[mask] * 8/7
+    df.loc[mask, "cheesecho"] = 0.0
+
+    mask = df["cheesetype"] == 2
+    df.loc[mask, "cheesekcal"] = cheese[mask] * 75/7
+    df.loc[mask, "cheesepro"] = cheese[mask] * 7/7
+    df.loc[mask, "cheesefat"] = cheese[mask] * 5/7
+    df.loc[mask, "cheesecho"] = 0.0
+
+    mask = df["cheesetype"] == 3
+    df.loc[mask, "cheesekcal"] = cheese[mask] * 74/7
+    df.loc[mask, "cheesepro"] = cheese[mask] * 3/7
+    df.loc[mask, "cheesefat"] = cheese[mask] * 6/7
+    df.loc[mask, "cheesecho"] = cheese[mask] * 3/7
+
+    df["cotcheesekcal"] = num("cotcheese") * 180/7
+    df["cotcheesepro"] = num("cotcheese") * 24/7
+    df["cotcheesefat"] = num("cotcheese") * 5/7
+    df["cotcheesecho"] = num("cotcheese") * 10/7
+
+    df["dairy"] = (
+        num("milk")/7 +
+        num("flvmilk")/7 +
+        num("yogurt")/7 +
+        num("flvyogurt")/7 +
+        num("cheese") * 0.67/7 +
+        num("cotcheese") * 0.8/7
+    )
 
 
     # ---------------- SALAD DRESSING ----------------
@@ -675,14 +801,17 @@ def process_nutrients(df):
 
     sld = num("slddressing")
 
-    mask = df["slddessingtype"] == 1
+    # REGULAR (any nonzero value)
+    mask = df["slddessingtype"] > 0
     df.loc[mask, "slddrkcal"] = sld[mask] * 45/7
     df.loc[mask, "slddrfat"] = sld[mask] * 5/7
 
+    # LIGHT (if coded separately)
     mask = df["slddessingtype"] == 2
     df.loc[mask, "slddrkcal"] = sld[mask] * 22.5/7
     df.loc[mask, "slddrfat"] = sld[mask] * 2.5/7
 
+    # FAT FREE
     mask = df["slddessingtype"] == 3
     df.loc[mask, "slddrkcal"] = sld[mask] * 20/7
     df.loc[mask, "slddrcho"] = sld[mask] * 5/7
@@ -705,6 +834,24 @@ def process_nutrients(df):
         num("nuts")*17.5/7 + num("avocado")*9/7
     )
 
+    df["extrafatscho"] = (
+        num("nuts") * 7.3/7 +
+        num("avocado") * 5/7 +
+        num("nutbtr") * 3/7
+    )
+
+    df["extrafatspro"] = (
+        num("nuts") * 6.4/7 +
+        num("nutbtr") * 4/7 +
+        num("avocado") * 1/7
+    )
+
+    df["extrafatsfiber"] = (
+        num("nuts") * 2.1/7 +
+        num("avocado") * 3.9/7 +
+        num("nutbtr") * 1/7
+    )
+
     # ---------------- SWEETS ----------------
     df["sweetskcal"] = num("choccndy")*105/7 + num("nonchccndy")*60/7 + num("icecrm")*150/7 + num("froyo")*105/7 + num("bkdgd")*105/7
     df["sweetscho"] = num("choccndy")*15/7 + num("nonchccndy")*15/7 + num("icecrm")*15/7 + num("froyo")*15/7 + num("bkdgd")*15/7
@@ -714,11 +861,15 @@ def process_nutrients(df):
     df["drinkskcal"] = num("swtbvg")*120 + num("swttcfee")*75 + num("otrswtbvg")*120 + num("nrgdrnk")*110 + num("chodrnk")*65/7
     df["drinkscho"] = num("swtbvg")*30 + num("swttcfee")*15 + num("otrswtbvg")*30 + num("nrgdrnk")*29 + num("chodrnk")*15/7
 
+    df["drinkspro"] = num("swttcfee") * 2
+    df["drinksfat"] = num("swttcfee") * 1.5
+    
     # ---------------- NRG ----------------
     df["nrgkcal"] = num("nrgbar")*225/7 + num("probar")*250/7 + num("gel")*100/7 + num("prodrnk")*286/7
     df["nrgcho"] = num("nrgbar")*35/7 + num("probar")*30/7 + num("gel")*27/7 + num("prodrnk")*36/7
     df["nrgpro"] = num("nrgbar")*10/7 + num("probar")*20/7 + num("prodrnk")*20/7
     df["nrgfat"] = num("nrgbar")*5/7 + num("probar")*7/7 + num("prodrnk")*8/7
+    df["nrgfiber"] = num("nrgbar") * 3/7 + num("probar") * 2/7 + num("prodrnk") * 4/7
 
     # ---------------- ALCOHOL ----------------
     df["alcoholkcal"] = (num("beer")*160 + num("spirits")*100 + num("mixed")*160 + num("wine")*100)/7
@@ -726,19 +877,90 @@ def process_nutrients(df):
 
     # ---------------- TOTAL KCAL ----------------
     df["kcaltotal"] = (
-        df["fruitkcal"] + df["vegnskcal"] + df["grainkcal"] + df["vegskcal"] +
-        df["meatpoultrykcal"] + df["fattyfishkcal"] + df["eggskcal"] +
-        df["milkkcal"] + df["yogkcal"] + df["slddrkcal"] + df["extrafatskcal"] +
-        df["sweetskcal"] + df["nrgkcal"] + df["drinkskcal"] +
-        df["coconutwaterkcal"] + df["alcoholkcal"]
+        df["fruitkcal"] +
+        df["vegnskcal"] +
+        df["grainkcal"] +
+        df["vegskcal"] +
+        df["meatpoultrykcal"] +
+        df["fattyfishkcal"] +
+        df["eggskcal"] +
+        df["milkkcal"] +
+        df["flvmilkkcal"] +
+        df["yogkcal"] +
+        df["flvyogkcal"] +
+        df["cheesekcal"] +
+        df["cotcheesekcal"] +
+        df["slddrkcal"] +
+        df["extrafatskcal"] +
+        df["sweetskcal"] +
+        df["nrgkcal"] +
+        df["drinkskcal"] +
+        df["coconutwaterkcal"] +
+        df["alcoholkcal"]
     )
 
     # ---------------- MACROS ----------------
-    df["cho"] = df["fruitcho"] + df["vegnscho"] + df["graincho"] + df["vegscho"] + df["milkcho"] + df["yogcho"] + df["slddrcho"] + df["sweetscho"] + df["nrgcho"] + df["drinkscho"] + df["coconutwatercho"] + df["alcoholcho"]
-    df["fat"] = df["grainfat"] + df["vegsfat"] + df["meatpoultryfat"] + df["fattyfishfat"] + df["eggsfat"] + df["milkfat"] + df["yogfat"] + df["slddrfat"] + df["extrafatsfat"] + df["sweetsfat"] + df["nrgfat"]
-    df["pro"] = df["vegnspro"] + df["grainpro"] + df["vegspro"] + df["meatpoultrypro"] + df["fattyfishpro"] + df["eggspro"] + df["milkpro"] + df["yogpro"] + df["nrgpro"]
-    df["fiber"] = df["fruitfiber"] + df["vegnsfiber"] + df["grainfiber"] + df["vegsfiber"]
-
+    df["cho"] = (
+        df["fruitcho"] +
+        df["vegnscho"] +
+        df["graincho"] +
+        df["vegscho"] +
+        df["milkcho"] +
+        df["flvmilkcho"] +
+        df["yogcho"] +
+        df["flvyogcho"] +
+        df["cheesecho"] +
+        df["cotcheesecho"] +
+        df["slddrcho"] +
+        df["extrafatscho"] +
+        df["sweetscho"] +
+        df["nrgcho"] +
+        df["drinkscho"] +
+        df["coconutwatercho"] +
+        df["alcoholcho"]
+    )
+    df["fat"] = (
+        df["grainfat"] +
+        df["vegsfat"] +
+        df["meatpoultryfat"] +
+        df["fattyfishfat"] +
+        df["eggsfat"] +
+        df["milkfat"] +
+        df["flvmilkfat"] +
+        df["yogfat"] +
+        df["flvyogfat"] +
+        df["cheesefat"] +
+        df["cotcheesefat"] +
+        df["slddrfat"] +
+        df["extrafatsfat"] +
+        df["sweetsfat"] +
+        df["drinksfat"] +
+        df["nrgfat"]
+    )
+    df["pro"] = (
+        df["vegnspro"] +
+        df["grainpro"] +
+        df["vegspro"] +
+        df["meatpoultrypro"] +
+        df["fattyfishpro"] +
+        df["eggspro"] +
+        df["milkpro"] +
+        df["flvmilkpro"] +
+        df["yogpro"] +
+        df["flvyogpro"] +
+        df["cheesepro"] +
+        df["cotcheesepro"] +
+        df["nrgpro"] +
+        df["drinkspro"]
+    )
+    df["fiber"] = (
+        df["fruitfiber"] +
+        df["vegnsfiber"] +
+        df["grainfiber"] +
+        df["vegsfiber"] +
+        df["extrafatsfiber"] +
+        df["nrgfiber"]
+    )
     # ---------------- EXERCISE ----------------
     df["runkcal"] = num("weightkg")*num("runmets")*num("hrsrunning")/7
     df["weightliftkcal"] = num("weightkg")*num("weightliftmets")*num("weightlifthrs")/7
@@ -752,6 +974,12 @@ def process_nutrients(df):
     df["ea"] = (df["kcaltotal"] - df["eee"]) / num("ffm")
     df.loc[df["kcaltotal"] == 0, "ea"] = np.nan
 
+    # ---------------- EI ----------------
+    df["ei"] = df["kcaltotal"]
+    df.loc[df["ei"] == 0, "ei"] = np.nan
+
+    df["ei_kg"] = df["ei"] / num("weightkg")
+    
     # ---------------- FLAGS ----------------
     df["lowea_clinical"] = 0
     df["lowea_subclinical"] = 0
