@@ -838,17 +838,12 @@ if uploaded_file is not None:
         return df[cols]
 
 
-    def create_allnutrition_dataset(df):
-        df = df.copy()
+def create_allnutrition_dataset(df):
+    df = df.copy()
 
-        # Drop ALL Qualtrics raw columns automatically
-        drop_cols = [c for c in df.columns if c.startswith("Q")]
+    drop_cols = [c for c in df.columns if c.startswith("Q")]
 
-        return df.drop(columns=drop_cols, errors="ignore")
-
-            drop_cols = [c for c in drop_cols if c in df.columns]
-            return df.drop(columns=drop_cols)
-
+    return df.drop(columns=drop_cols, errors="ignore")
 
     # ===============================
     # RUN OUTPUT CREATION
