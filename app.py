@@ -841,27 +841,13 @@ if uploaded_file is not None:
     def create_allnutrition_dataset(df):
         df = df.copy()
 
-        drop_cols = [
-            "RecordedDate","Q182","Q200","Q230","Q209","Q210","Q212","Q213",
-            "Q214","Q215","Q70","Q218","Q219","Q221","Q224","Q223","Q228",
-            "Q229","Q231","Q255","Q256","Q152","Q153","Q154","Q155","Q156",
-            "Q157","Q158","Q232","Q233","Q235","Q236","Q237","Q244",
-            "Q160","Q161","Q162","Q240","Q241","Q242","Q165","Q166",
-            "Q10","Q11","Q12","Q276","Q149","Q146","Q1","Q150","Q24",
-            "Q23","Q148","Q163","Q164","Q27","Q28","Q29","Q177","Q178",
-            "Q33","Q169","Q64","Q170","Q65","Q168","Q286","Q171","Q179",
-            "Q35","Q257","Q261","Q262","Q263","Q264","Q265","Q266",
-            "Q267","Q268","Q269","Q270","Q271","Q159","Q38","Q130",
-            "Q134","Q42","Q61","Q62","Q63","Q43","Q60","Q278","Q279",
-            "Q280","Q52","Q272","Q273","Q275","Q125","Q282","Q281",
-            "Q284","Q285","Q55","Q56","Q120","Q57","Q138","Q141",
-            "Q245","Q248","Q250","Q251","Q252","Q253","Q254","Q26",
-            "Q161_0001","Q157_0001","Q156_0001","Q158_0001","Q160_0001",
-            "Q162_0001","Q165_0001"
-        ]
+        # Drop ALL Qualtrics raw columns automatically
+        drop_cols = [c for c in df.columns if c.startswith("Q")]
 
-        drop_cols = [c for c in drop_cols if c in df.columns]
-        return df.drop(columns=drop_cols)
+        return df.drop(columns=drop_cols, errors="ignore")
+
+            drop_cols = [c for c in drop_cols if c in df.columns]
+            return df.drop(columns=drop_cols)
 
 
     # ===============================
