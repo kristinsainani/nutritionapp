@@ -313,6 +313,76 @@ def process_dairy_types(df):
 
     return df
 
+def process_body_metrics(df):
+    df = df.copy()
+
+    def num(col):
+        if col in df.columns:
+            return pd.to_numeric(df[col], errors="coerce")
+        else:
+            return pd.Series([np.nan]*len(df), index=df.index)
+
+    # ---- BASIC BODY METRICS ----
+    df["age"] = num("Q1")
+    df["gender"] = df["Q2"]
+
+    # ismale (SAS style: 1 = male, 0 = female)
+    df["ismale"] = np.where(df["gender"].astype(str).str.contains("male", case=False, na=False), 1, 0)
+
+    # height (meters)
+    df["heightm"] = num("Q3") / 100
+
+    # weight (kg)
+    df["weightkg"] = num("Q4")
+
+    # BMI
+    df["bmi"] = df["weightkg"] / (df["heightm"] ** 2)
+
+    return df
+
+def process_exercise(df):
+    df = df.copy()
+
+    def num(col):
+        if col in df.columns:
+            return pd.to_numeric(df[col], errors="coerce").fillna(0)
+        else:
+            return pd.Series(0, index=df.index)
+
+    # ---- HOURS / WEEK (from Qualtrics) ----
+    # Adjust these Q-codes ONLY if your survey uses different ones
+    df["hrsrunning"] = num("Q60")
+    df["weightlifthrs"] = num("Q61")
+    df["aquajoghrs"] = num("Q62")
+    df["bikehrs"] = num("Q63")
+    df["ellipticalhrs"] = num("Q43")
+
+    # ---- METS (constants; SAS-style) ----
+    df["runmets"] = 9.8
+    df["weightliftmets"] = 6.0
+    df["aquajogmets"] = 4.0
+    df["bikemets"] = 7.5
+    df["ellipticalmets"] = 5.0
+
+    # ---- TOTAL HOURS (optional helper) ----
+    df["total_ex_hrs"] = (
+        df["hrsrunning"] +
+        df["weightlifthrs"] +
+        df["aquajoghrs"] +
+        df["bikehrs"] +
+        df["ellipticalhrs"]
+    )
+
+    # ---- MILES / WEEK (if present) ----
+    # Keep name to match your REDCap block
+    if "Q134" in df.columns:
+        df["miles_wk"] = num("Q134")
+    else:
+        df["miles_wk"] = 0
+
+    return df
+    
+
 def process_body_composition(df):
     df = df.copy()
 
