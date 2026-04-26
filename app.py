@@ -435,6 +435,88 @@ def process_body_composition(df):
 
     return df
 
+
+def process_behavior_and_supplements(df):
+    df = df.copy()
+
+    # ---- Meals / snacks ----
+    num_map = {
+        "one":1,"two":2,"three":3,"four":4,"five":5,
+        "six":6,"seven":7,"eight":8,"nine":9,"ten":10
+    }
+
+    df["MealsDay"] = df.get("Q152","").str.lower().map(num_map)
+    df["SnacksDay"] = df.get("Q153","").str.lower().map(num_map)
+
+    # ---- Yes / No ----
+    df["Fasting"] = np.where(df.get("Q154")=="Yes",1,0)
+    df["Skip"] = np.where(df.get("Q155")=="Yes",1,0)
+
+    # ---- Diet type ----
+    s = df.get("Q157","").astype(str).str.lower()
+
+    df["Vegetarian"] = np.where(s.str.contains("vegetarian"),1,0)
+    df["Vegan"] = np.where(s.str.contains("vegan"),1,0)
+
+    # ---- Restrict ----
+    df["Restrict"] = np.where(
+        (df["Vegetarian"]==1) | (df["Vegan"]==1) |
+        ((df.get("Q158")=="Yes") & (df.get("Q232")=="No")),
+        1,0
+    )
+
+    df["RestrictAllergy"] = np.where(df.get("Q232")=="Yes",1,0)
+
+    # ---- Housing ----
+    s = df.get("Q240","").astype(str).str.lower()
+
+    df["Housing"] = np.nan
+    df.loc[s.str.contains("student housing"), "Housing"] = 1
+    df.loc[s.str.contains("alone"), "Housing"] = 2
+    df.loc[s.str.contains("with one"), "Housing"] = 3
+    df.loc[s.str.contains("other"), "Housing"] = 4
+
+    # ---- Food prep ----
+    s = df.get("Q241","").astype(str).str.lower()
+
+    df["FoodPrep"] = np.nan
+    df.loc[s.str.contains("family"), "FoodPrep"] = 1
+    df.loc[s.str.contains("i am"), "FoodPrep"] = 2
+    df.loc[s.str.contains("campus"), "FoodPrep"] = 3
+    df.loc[s.str.contains("another"), "FoodPrep"] = 4
+
+    # ---- Food insecurity ----
+    s = df.get("Q245","").astype(str)
+
+    df["FoodInsecure"] = np.where(
+        (s=="Often true") | (s=="Sometimes true"), 1, 0
+    )
+
+    # ---- Supplements ----
+    s165 = df.get("Q165","").astype(str)
+    s166 = df.get("Q166","").astype(str)
+
+    df["supp"] = np.where(
+        ((s165=="I do not take vitamins or minerals.") | (s165=="")) &
+        ((s166=="None") | (s166=="")),
+        0,1
+    )
+
+    df["vitamin"] = np.where(s165.str.contains("Multivitamin", na=False),1,0)
+    df["vitamind"] = np.where(s165.str.contains("Vitamin D", na=False),1,0)
+    df["iron"] = np.where(s165.str.contains("Iron", na=False),1,0)
+    df["calcium"] = np.where(s165.str.contains("Calcium", na=False),1,0)
+
+    df["caffeine"] = np.where(s166.str.contains("Caffeine", na=False),1,0)
+    df["creatine"] = np.where(s166.str.contains("Creatine", na=False),1,0)
+    df["prewrkout"] = np.where(s166.str.contains("Preworkout", na=False),1,0)
+    df["WtGainer"] = np.where(s166.str.contains("gain", na=False),1,0)
+    df["WtLosssupp"] = np.where(s166.str.contains("loss", na=False),1,0)
+    df["AAsupp"] = np.where(s166.str.contains("acids", na=False),1,0)
+    df["HerBotSupp"] = np.where(s166.str.contains("botanicals", na=False),1,0)
+
+    return df
+
 if uploaded_file is not None:
     df = read_uploaded_file(uploaded_file)
     df = normalize_qualtrics_columns(df)
@@ -445,7 +527,8 @@ if uploaded_file is not None:
     df = process_body_metrics(df)
     df = process_exercise(df)
     df = process_body_composition(df)
-
+    df = process_behavior_and_supplements(df)
+    
     st.write("Preview of uploaded data:")
     st.dataframe(df.head())
 
