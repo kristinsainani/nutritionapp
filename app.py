@@ -1112,14 +1112,19 @@ def process_nutrients(df):
     df["fatkg"] = df["fat"] / df["weightkg"]
     
     # ---------------- EXERCISE ----------------
-    df["runkcal"] = num("weightkg")*num("runmets")*num("hrsrunning")/7
-    df["weightliftkcal"] = num("weightkg")*num("weightliftmets")*num("weightlifthrs")/7
-    df["aquajogkcal"] = num("weightkg")*num("aquajogmets")*num("aquajoghrs")/7
-    df["bikekcal"] = num("weightkg")*num("bikemets")*num("bikehrs")/7
-    df["ellipticalkcal"] = num("weightkg")*num("ellipticalmets")*num("ellipticalhrs")/7
+    df["runkcal"] = df["weightkg"] * df["runMETS"] * df["hrsrunning"] / 7
+    df["weightliftkcal"] = df["weightkg"] * df["weightliftMETS"] * df["weightlifthrs"] / 7
+    df["aquajogkcal"] = df["weightkg"] * df["aquajogMETS"] * df["aquajoghrs"] / 7
+    df["bikekcal"] = df["weightkg"] * df["bikeMETS"] * df["bikehrs"] / 7
+    df["ellipticalkcal"] = df["weightkg"] * df["ellipticalMETS"] * df["ellipticalhrs"] / 7
 
-    df["eee"] = df["runkcal"] + df["weightliftkcal"] + df["aquajogkcal"] + df["bikekcal"] + df["ellipticalkcal"]
-
+    df["eee"] = (
+        df["runkcal"] +
+        df["weightliftkcal"] +
+        df["aquajogkcal"] +
+        df["bikekcal"] +
+        df["ellipticalkcal"]
+    )
 
     # ---------------- EI ----------------
     df["ei"] = df["kcaltotal"]
