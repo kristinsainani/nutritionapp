@@ -418,48 +418,47 @@ def process_exercise(df):
 
     # ---- HOURS TEXT → NUMERIC ----
     def convert_hours(series):
-        s = series.astype(str).str.upper()
+        s = series.astype(str).str.upper().str.strip()
         out = pd.Series(np.nan, index=series.index)
 
-        mapping = {
-            "NONE": 0,
-            "HALF": 0.5,
-            "ONE HOUR": 1,
-            "ONE AND A HALF": 1.5,
-            "TWO": 2,
-            "TWO AND A HALF": 2.5,
-            "THREE HOURS": 3,
-            "THREE AND A HALF": 3.5,
-            "FOUR HOURS": 4,
-            "FOUR AND A HALF": 4.5,
-            "FIVE HOURS": 5,
-            "FIVE AND A HALF": 5.5,
-            "SIX HOURS": 6,
-            "SIX AND A HALF": 6.5,
-            "SEVEN HOURS": 7,
-            "SEVEN AND A HALF": 7.5,
-            "EIGHT HOURS": 8,
-            "EIGHT AND A HALF": 8.5,
-            "NINE HOURS": 9,
-            "NINE AND A HALF": 9.5,
-            "TEN HOURS": 10,
-            "TEN AND A HALF": 10.5,
-            "ELEVEN HOURS": 11,
-            "ELEVEN AND A HALF": 11.5,
-            "TWELVE HOURS": 12,
-            "TWELVE AND A HALF": 12.5,
-            "THIRTEEN HOURS": 13,
-            "THIRTEEN AND A HALF": 13.5,
-            "FOURTEEN HOURS": 14,
-            "FOURTEEN AND A HALF": 14.5,
-            "FIFTEEN HOURS": 15
-        }
+        mapping = [
+            ("NONE", 0),
+            ("HALF", 0.5),
+            ("ONE HOUR", 1),
+            ("ONE AND A HALF", 1.5),
+            ("TWO AND A HALF", 2.5),
+            ("TWO", 2),
+            ("THREE AND A HALF", 3.5),
+            ("THREE HOURS", 3),
+            ("FOUR AND A HALF", 4.5),
+            ("FOUR HOURS", 4),
+            ("FIVE AND A HALF", 5.5),
+            ("FIVE HOURS", 5),
+            ("SIX AND A HALF", 6.5),
+            ("SIX HOURS", 6),
+            ("SEVEN AND A HALF", 7.5),
+            ("SEVEN HOURS", 7),
+            ("EIGHT AND A HALF", 8.5),
+            ("EIGHT HOURS", 8),
+            ("NINE AND A HALF", 9.5),
+            ("NINE HOURS", 9),
+            ("TEN AND A HALF", 10.5),
+            ("TEN HOURS", 10),
+            ("ELEVEN AND A HALF", 11.5),
+            ("ELEVEN HOURS", 11),
+            ("TWELVE AND A HALF", 12.5),
+            ("TWELVE HOURS", 12),
+            ("THIRTEEN AND A HALF", 13.5),
+            ("THIRTEEN HOURS", 13),
+            ("FOURTEEN AND A HALF", 14.5),
+            ("FOURTEEN HOURS", 14),
+            ("FIFTEEN HOURS", 15)
+        ]
 
-        for k, v in mapping.items():
-            out[s.str.contains(k, na=False)] = v
+        for text, val in mapping:
+            out[s.str.startswith(text, na=False)] = val
 
         return out.fillna(0)
-
 
     # ---- APPLY HOURS CONVERSION ----
     df["Q70"]  = convert_hours(df["Q70"])
