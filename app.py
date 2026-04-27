@@ -1032,6 +1032,7 @@ def process_nutrients(df):
         df["eggs"] +
         df["legumes"]
     )
+
     # ---------------- MACROS ----------------
     df["cho"] = (
         df["fruitcho"] +
@@ -1094,6 +1095,12 @@ def process_nutrients(df):
         df["extrafatsfiber"] +
         df["nrgfiber"]
     )
+
+    # ---------------- MACROS PER KG ----------------
+    df["chokg"] = df["cho"] / df["weightkg"]
+    df["prokg"] = df["pro"] / df["weightkg"]
+    df["fatkg"] = df["fat"] / df["weightkg"]
+    
     # ---------------- EXERCISE ----------------
     df["runkcal"] = num("weightkg")*num("runmets")*num("hrsrunning")/7
     df["weightliftkcal"] = num("weightkg")*num("weightliftmets")*num("weightlifthrs")/7
