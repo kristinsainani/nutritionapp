@@ -926,6 +926,7 @@ def process_nutrients(df):
     mask = df["slddessingtype"] == 2
     df.loc[mask, "slddrkcal"] = sld[mask] * 22.5/7
     df.loc[mask, "slddrfat"] = sld[mask] * 2.5/7
+    df.loc[mask, "slddrcho"] = sld[mask] * 2/7
 
     # REGULAR (must be last)
     mask = df["slddessingtype"] == 1
