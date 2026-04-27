@@ -575,11 +575,11 @@ def process_behavior_and_supplements(df):
     s166 = get_series("Q166")
 
     df["supp"] = np.where(
-        df["Q165"].isin(["I do not take vitamins or minerals.", ".", ""]) &
-        df["Q166"].isin(["None", ".", ""]),
-        0, 1
+        (df["Q165"].astype(str).str.strip().isin(["I do not take vitamins or minerals.", ".", ""])) &
+        (df["Q166"].astype(str).str.strip().isin(["None", ".", ""])),
+        0,
+        1
     )
-
     df["vitamin"] = np.where(s165.str.contains("Multivitamin", na=False),1,0)
     df["vitamind"] = np.where(
         df["Q165"].astype(str).str.contains("Vitamin D supplement", na=False),
@@ -973,7 +973,7 @@ def process_nutrients(df):
     # ---------------- DRINK FLAGS ----------------
 
     df["chodrnk"] = df["chodrnk"]
-    df["caffdrnk"] = (df["swttcfee"] + df["unswttcfee"]) / 7
+    df["caffdrnk"] = df["Q285"] / 7
     
     # ---------------- FLUIDS (MATCH SAS EXACTLY, LOWERCASE) ----------------
 
