@@ -1121,15 +1121,6 @@ def process_nutrients(df):
     df["eee"] = df["runkcal"] + df["weightliftkcal"] + df["aquajogkcal"] + df["bikekcal"] + df["ellipticalkcal"]
 
 
-    # ---------------- EEE ----------------
-    df["eee"] = (
-        df["hrsrunning"] * df["runMETS"] +
-        df["weightlifthrs"] * df["weightliftMETS"] +
-        df["aquajoghrs"] * df["aquajogMETS"] +
-        df["bikehrs"] * df["bikeMETS"] +
-        df["ellipticalhrs"] * df["ellipticalMETS"]
-    ) * df["weightkg"]
-
     # ---------------- EI ----------------
     df["ei"] = df["kcaltotal"]
     df.loc[df["ei"] == 0, "ei"] = np.nan
