@@ -570,7 +570,7 @@ def process_behavior_and_supplements(df):
         (s=="Often true") | (s=="Sometimes true"), 1, 0
     )
 
-        q165 = df["Q165"].fillna("").astype(str).str.strip()
+    q165 = df["Q165"].fillna("").astype(str).str.strip()
     q166 = df["Q166"].fillna("").astype(str).str.strip()
 
     # ---- SUPP (presence of ANY supplement info) ----
