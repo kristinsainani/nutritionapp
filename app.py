@@ -960,6 +960,78 @@ def process_nutrients(df):
         df["alcoholkcal"]
     )
 
+    # ---------------- FINAL TOTALS (MATCH SAS) ----------------
+
+    # ---------------- FLUIDS (MATCH SAS EXACTLY, LOWERCASE) ----------------
+
+    df["swtbvgtotal"] = (
+        df["swtbvg"] +
+        df["swttcfee"] +
+        df["otrswtbvg"] +
+        df["nrgdrnk"] +
+        df["chodrnk"]
+    ) * 8/7
+
+    df["otrbevtotal"] = (
+        df["zerocaldrnk"] +
+        df["unswttcfee"] +
+        df["water"]
+    ) * 8
+
+    df["prodrnktotal"] = df["prodrnk"] * 11/7
+
+    df["prodrnkwk"] = df["prodrnk"]
+
+    df["fruitjuicetotal"] = df["fruitjuice"] * 8/7
+    df["coconutwatertotal"] = df["coconutwater"] * 8/7
+    df["milktotal"] = (df["milk"] + df["flvmilk"]) * 8/7
+    df["vegjuicetotal"] = df["tomjuice"] * 8/7
+
+    df["fluids"] = (
+        df["swtbvgtotal"] +
+        df["otrbevtotal"] +
+        df["prodrnktotal"] +
+        df["fruitjuicetotal"] +
+        df["coconutwatertotal"] +
+        df["milktotal"] +
+        df["vegjuicetotal"]
+    )
+
+    # ---------------- DAIRY (SERVINGS / DAY) ----------------
+    df["dairy"] = (
+        df["milk"]/7 +
+        df["flvmilk"]/7 +
+        df["yogurt"]/7 +
+        df["flvyogurt"]/7 +
+        df["cheese"] * 0.67/7 +
+        df["cotcheese"] * 0.8/7
+    )
+
+    # ---------------- MISSING FOOD GROUPS (MATCH SAS) ----------------
+
+    # eggs (1 each equivalent/day)
+    df["eggs"] = (
+        (df["whegg"] * 0.143) +
+        (df["eggwt"] * 0.67) / 7
+    )
+
+    # fatty fish (1 oz servings/day)
+    df["fttyfish"] = (
+        (df["ftyfish"] * 0.143) / 3
+    )
+
+    # meat + poultry (1 oz servings/day)
+    df["mtpltry"] = (
+        (df["leanmeat"] + df["fatmeat"]) * 0.143 / 3
+    )
+
+    # protein foods (servings/day)
+    df["profoods"] = (
+        df["mtpltry"] +
+        df["fttyfish"] +
+        df["eggs"] +
+        df["legumes"]
+    )
     # ---------------- MACROS ----------------
     df["cho"] = (
         df["fruitcho"] +
