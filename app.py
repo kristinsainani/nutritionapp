@@ -967,10 +967,14 @@ def process_nutrients(df):
     # ---------------- NRG ----------------
     df["nrgkcal"] = num("nrgbar")*225/7 + num("probar")*250/7 + num("gel")*100/7 + num("prodrnk")*286/7
     df["nrgcho"] = num("nrgbar")*35/7 + num("probar")*30/7 + num("gel")*27/7 + num("prodrnk")*36/7
-    df["nrgpro"] = num("nrgbar")*10/7 + num("probar")*20/7 + num("prodrnk")*20/7
-    df["nrgfat"] = num("nrgbar")*5/7 + num("probar")*7/7 + num("prodrnk")*8/7
-    df["nrgfiber"] = num("nrgbar") * 3/7 + num("probar") * 2/7 + num("prodrnk") * 4/7
 
+    # NRG PRO/FAT: bars only (exclude prodrnk)
+    df["nrgpro"] = num("nrgbar")*10/7 + num("probar")*20/7
+    df["nrgfat"] = num("nrgbar")*5/7 + num("probar")*7/7
+
+    df["nrgfiber"] = num("nrgbar")*3/7 + num("probar")*2/7 + num("prodrnk")*4/7
+
+    # bars/gels (SAS)
     df["barsgelspro"] = num("nrgbar")*10/7 + num("probar")*20/7
     df["barsgelsfat"] = num("nrgbar")*5/7 + num("probar")*7/7
 
