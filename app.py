@@ -960,8 +960,19 @@ def process_nutrients(df):
         df["alcoholkcal"]
     )
 
-    # ---------------- FINAL TOTALS (MATCH SAS) ----------------
 
+    # ---------------- WEEKLY SPORTS NUTRITION VARIABLES ----------------
+
+    df["barswk"] = df["nrgbar"]
+    df["probarswk"] = df["probar"]
+    df["prodrnkwk"] = df["prodrnk"]
+    df["gelchewwk"] = df["gel"]
+    
+    # ---------------- DRINK FLAGS ----------------
+
+    df["chodrnk"] = df["chodrnk"]
+    df["caffdrnk"] = df["swttcfee"] + df["unswttcfee"]
+    
     # ---------------- FLUIDS (MATCH SAS EXACTLY, LOWERCASE) ----------------
 
     df["swtbvgtotal"] = (
