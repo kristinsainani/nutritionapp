@@ -571,17 +571,22 @@ def process_behavior_and_supplements(df):
     )
 
     # ---------------- SUPPLEMENTS ----------------
-    q165 = df["Q165"].fillna("").astype(str)
-    q166 = df["Q166"].fillna("").astype(str)
+    q165 = df["Q165"].fillna("").astype(str).str.strip()
+    q166 = df["Q166"].fillna("").astype(str).str.strip()
 
-    no_q165 = q165.isin(["I do not take vitamins or minerals.", "."])
-    no_q166 = q166.isin(["None", "."])
-
-    df["supp"] = np.where(
-        no_q165 & no_q166,
-        0,
-        1
+    has_q165 = (
+        (q165 != "") &
+        (q165 != ".") &
+        (~q165.str.contains("do not take", case=False, na=False))
     )
+
+    has_q166 = (
+        (q166 != "") &
+        (q166 != ".") &
+        (~q166.str.contains("none", case=False, na=False))
+    )
+
+    df["supp"] = np.where(has_q165 | has_q166, 1, 0)
 
     df["vitamin"] = np.where(
         q165.str.contains("Multivitamin", case=False, na=False),
