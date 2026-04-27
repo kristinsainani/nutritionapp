@@ -570,35 +570,27 @@ def process_behavior_and_supplements(df):
         (s=="Often true") | (s=="Sometimes true"), 1, 0
     )
 
-    # ---- Supplements ----
-    s165 = get_series("Q165")
-    s166 = get_series("Q166")
-
-    # ---------------- SUPPLEMENT USE (MATCH SAS EXACTLY) ----------------
-    q165 = df["Q165"].astype(str).str.strip()
-    q166 = df["Q166"].astype(str).str.strip()
+    # ---------------- SUPPLEMENTS ----------------
 
     df["supp"] = np.where(
-        (q165.isin(["I do not take vitamins or minerals.", ".", ""])) &
-        (q166.isin(["None", ".", ""])),
+        df["Q165"].str.contains("I do not take vitamins or minerals", na=False) &
+        df["Q166"].str.contains("None", na=False),
         0,
         1
     )
-    df["vitamin"] = np.where(s165.str.contains("Multivitamin", na=False),1,0)
-    df["vitamind"] = np.where(
-        df["Q165"].astype(str).str.contains("Vitamin D supplement", na=False),
-        1, 0
-    )
-    df["iron"] = np.where(s165.str.contains("Iron", na=False),1,0)
-    df["calcium"] = np.where(s165.str.contains("Calcium", na=False),1,0)
 
-    df["caffeine"] = np.where(s166.str.contains("Caffeine", na=False),1,0)
-    df["creatine"] = np.where(s166.str.contains("Creatine", na=False),1,0)
-    df["prewrkout"] = np.where(s166.str.contains("Preworkout", na=False),1,0)
-    df["wtgainer"] = np.where(s166.str.contains("gain", na=False),1,0)
-    df["wtlosssupp"] = np.where(s166.str.contains("loss", na=False),1,0)
-    df["aasupp"] = np.where(s166.str.contains("acids", na=False),1,0)
-    df["herbotsupp"] = np.where(s166.str.contains("botanicals", na=False),1,0)
+    df["vitamin"] = np.where(df["Q165"].str.contains("Multivitamin", na=False), 1, 0)
+    df["vitamind"] = np.where(df["Q165"].str.contains("Vitamin D supplement", na=False), 1, 0)
+    df["iron"] = np.where(df["Q165"].str.contains("Iron", na=False), 1, 0)
+    df["calcium"] = np.where(df["Q165"].str.contains("Calcium", na=False), 1, 0)
+
+    df["caffeine"] = np.where(df["Q166"].str.contains("Caffeine", na=False), 1, 0)
+    df["creatine"] = np.where(df["Q166"].str.contains("Creatine", na=False), 1, 0)
+    df["prewrkout"] = np.where(df["Q166"].str.contains("Preworkout", na=False), 1, 0)
+    df["wtgainer"] = np.where(df["Q166"].str.contains("gain", na=False), 1, 0)
+    df["wtlosssupp"] = np.where(df["Q166"].str.contains("loss", na=False), 1, 0)
+    df["aasupp"] = np.where(df["Q166"].str.contains("acids", na=False), 1, 0)
+    df["herbotsupp"] = np.where(df["Q166"].str.contains("botanicals", na=False), 1, 0)
 
     return df
 
