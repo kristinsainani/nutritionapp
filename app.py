@@ -643,6 +643,11 @@ def process_nutrients(df):
             return pd.to_numeric(df[col], errors="coerce").fillna(0)
         return pd.Series(0, index=df.index)
 
+    # ---------------- RULE 2: <1 -> 0 ----------------
+    for col in df.columns:
+        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+        df[col] = np.where(df[col] < 1, 0, df[col])
+
     # ---------------- FRUIT ----------------
     df["fruitkcal"] = num("fruits")*60 + num("driedfruit")*60 + num("fruitjuice")*120/7
     df["fruitcho"] = num("fruits")*15 + num("driedfruit")*15 + num("fruitjuice")*30/7
@@ -712,6 +717,10 @@ def process_nutrients(df):
     df["eggsfat"] = num("whegg")*5/7
 
     # ---------------- MILK + FLAVORED MILK ----------------
+
+    mask = (num("milk") > 0) & (df["milktype"].isna() | (df["milktype"] == 0))
+    df.loc[mask, "milktype"] = 2
+
     df["milkkcal"] = 0.0
     df["milkcho"] = 0.0
     df["milkpro"] = 0.0
@@ -775,6 +784,9 @@ def process_nutrients(df):
     df.loc[mask, "flvmilkfat"] = flvmilk[mask] * 3/7
 
     # ---------------- YOGURT + FLAVORED YOGURT ----------------
+    mask = (num("yogurt") > 0) & (df["yogtype"].isna() | (df["yogtype"] == 0))
+    df.loc[mask, "yogtype"] = 2
+
     df["yogkcal"] = 0.0
     df["yogcho"] = 0.0
     df["yogpro"] = 0.0
@@ -854,6 +866,9 @@ def process_nutrients(df):
     df.loc[mask, "flvyogfat"] = 0.0
 
     # ---------------- CHEESE + COTTAGE CHEESE ----------------
+    mask = (num("cheese") > 0) & (df["cheesetype"].isna() | (df["cheesetype"] == 0))
+    df.loc[mask, "cheesetype"] = 1
+    
     df["cheesekcal"] = 0.0
     df["cheesepro"] = 0.0
     df["cheesefat"] = 0.0
