@@ -971,6 +971,9 @@ def process_nutrients(df):
     df["nrgfat"] = num("nrgbar")*5/7 + num("probar")*7/7 + num("prodrnk")*8/7
     df["nrgfiber"] = num("nrgbar") * 3/7 + num("probar") * 2/7 + num("prodrnk") * 4/7
 
+    df["barsgelspro"] = num("nrgbar")*10/7 + num("probar")*20/7
+    df["barsgelsfat"] = num("nrgbar")*5/7 + num("probar")*7/7
+
     # ---------------- ALCOHOL ----------------
     df["alcoholkcal"] = (num("beer")*160 + num("spirits")*100 + num("mixed")*160 + num("wine")*100)/7
     df["alcoholcho"] = (num("beer")*15 + num("mixed")*15)/7
