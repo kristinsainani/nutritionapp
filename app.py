@@ -339,10 +339,9 @@ def process_body_metrics(df):
             return pd.to_numeric(
                 df[col].astype(str).str.extract(r"(\d+\.?\d*)")[0],
                 errors="coerce"
-        )
-    else:
-        return pd.Series(np.nan, index=df.index)
-
+            )
+        else:
+            return pd.Series(np.nan, index=df.index)
 
     # ---- HEIGHT / WEIGHT ----
     height_in = clean_numeric("Q209")
@@ -354,11 +353,9 @@ def process_body_metrics(df):
     # ---- BMI ----
     df["bmi"] = df["weightkg"] / (df["heightm"] ** 2)
 
-    # ---- GENDER (ROBUST MATCH) ----
+    # ---- GENDER ----
     s = df["Q230"].astype(str)
-
     df["gender"] = s
-
     df["ismale"] = np.where(
         s.str.contains("Male", na=False), 1,
         np.where(s.str.contains("Female", na=False), 0, np.nan)
