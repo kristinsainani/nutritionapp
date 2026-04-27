@@ -570,10 +570,10 @@ def process_behavior_and_supplements(df):
         (s=="Often true") | (s=="Sometimes true"), 1, 0
     )
 
-    # ---------------- SUPPLEMENTS ----------------
-    q165 = df["Q165"].fillna("").astype(str).str.strip()
+        q165 = df["Q165"].fillna("").astype(str).str.strip()
     q166 = df["Q166"].fillna("").astype(str).str.strip()
 
+    # ---- SUPP (presence of ANY supplement info) ----
     has_q165 = (
         (q165 != "") &
         (q165 != ".") &
@@ -588,70 +588,50 @@ def process_behavior_and_supplements(df):
 
     df["supp"] = np.where(has_q165 | has_q166, 1, 0)
 
+    # ---- Q165 supplements ----
     df["vitamin"] = np.where(
-        q165.str.contains("Multivitamin", case=False, na=False),
-        1,
-        0
+        q165.str.contains("Multivitamin", case=False, na=False), 1, 0
     )
 
     df["vitamind"] = np.where(
-        q165.str.contains("Vitamin D supplement", case=False, na=False),
-        1,
-        0
+        q165.str.contains("Vitamin D supplement", case=False, na=False), 1, 0
     )
 
     df["iron"] = np.where(
-        q165.str.contains("Iron", case=False, na=False),
-        1,
-        0
+        q165.str.contains("Iron", case=False, na=False), 1, 0
     )
 
     df["calcium"] = np.where(
-        q165.str.contains("Calcium", case=False, na=False),
-        1,
-        0
+        q165.str.contains("Calcium", case=False, na=False), 1, 0
     )
 
+    # ---- Q166 supplements ----
     df["caffeine"] = np.where(
-        q166.str.contains("Caffeine", case=False, na=False),
-        1,
-        0
+        q166.str.contains("Caffeine", case=False, na=False), 1, 0
     )
 
     df["creatine"] = np.where(
-        q166.str.contains("Creatine", case=False, na=False),
-        1,
-        0
+        q166.str.contains("Creatine", case=False, na=False), 1, 0
     )
 
     df["prewrkout"] = np.where(
-        q166.str.contains("Preworkout", case=False, na=False),
-        1,
-        0
+        q166.str.contains("Preworkout", case=False, na=False), 1, 0
     )
 
     df["WtGainer"] = np.where(
-        q166.str.contains("gain", case=False, na=False),
-        1,
-        0
+        q166.str.contains("gain", case=False, na=False), 1, 0
     )
 
     df["WtLosssupp"] = np.where(
-        q166.str.contains("loss", case=False, na=False),
-        1,
-        0
+        q166.str.contains("loss", case=False, na=False), 1, 0
     )
 
     df["AAsupp"] = np.where(
-        q166.str.contains("acids", case=False, na=False),
-        1,
-        0
+        q166.str.contains("acids", case=False, na=False), 1, 0
     )
 
     df["HerBotSupp"] = np.where(
-        q166.str.contains("botanicals", case=False, na=False),
-        1,
-        0
+        q166.str.contains("botanicals", case=False, na=False), 1, 0
     )
     return df
 
@@ -1154,8 +1134,10 @@ def process_nutrients(df):
         df["flvyogpro"] +
         df["cheesepro"] +
         df["cotcheesepro"] +
-        df["nrgpro"] +
-        df["drinkspro"]
+        df["extrafatspro"] +
+        df["barsgelspro"] +
+        df["drinkspro"] +
+        df["nrgpro"]
     )
     df["fiber"] = (
         df["fruitfiber"] +
