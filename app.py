@@ -645,11 +645,10 @@ def process_nutrients(df):
         return pd.Series(0, index=df.index)
 
     # ---------------- RULE 2: <1 -> 0 ----------------
-    for col in df.columns:
-        if col == "Q182":
-            continue
-        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
-        df[col] = np.where(df[col] < 1, 0, df[col])
+    if col in ["Q182", "Q230"]:
+        continue
+    df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+    df[col] = np.where(df[col] < 1, 0, df[col])for col in df.columns:
 
     # ---------------- FRUIT ----------------
     df["fruitkcal"] = num("fruits")*60 + num("driedfruit")*60 + num("fruitjuice")*120/7
