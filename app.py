@@ -415,50 +415,50 @@ def process_exercise(df):
     df["ellipticalMETS"] = map_intensity(df["Q225"], 9, 7, 5, 7)
 
     # ---- HOURS TEXT → NUMERIC ----
-    def convert_hours(series):
-        s = series.astype(str).str.upper().str.strip()
-        out = pd.Series(np.nan, index=series.index)
+def convert_hours(series):
+    s = series.astype(str).str.upper().str.strip()
+    out = pd.Series(np.nan, index=series.index)
 
-        mapping = [
-            ("NONE", 0),
-            ("HALF OF AN HOUR", 0.5),
-            ("HALF", 0.5),
-            ("ONE AND A HALF", 1.5),
-            ("ONE", 1),
-            ("TWO AND A HALF", 2.5),
-            ("TWO", 2),
-            ("THREE AND A HALF", 3.5),
-            ("THREE", 3),
-            ("FOUR AND A HALF", 4.5),
-            ("FOUR", 4),
-            ("FIVE AND A HALF", 5.5),
-            ("FIVE", 5),
-            ("SIX AND A HALF", 6.5),
-            ("SIX", 6),
-            ("SEVEN AND A HALF", 7.5),
-            ("SEVEN", 7),
-            ("EIGHT AND A HALF", 8.5),
-            ("EIGHT", 8),
-            ("NINE AND A HALF", 9.5),
-            ("NINE", 9),
-            ("TEN AND A HALF", 10.5),
-            ("TEN", 10),
-            ("ELEVEN AND A HALF", 11.5),
-            ("ELEVEN", 11),
-            ("TWELVE AND A HALF", 12.5),
-            ("TWELVE", 12),
-            ("THIRTEEN AND A HALF", 13.5),
-            ("THIRTEEN", 13),
-            ("FOURTEEN AND A HALF", 14.5),
-            ("FOURTEEN", 14),
-            ("FIFTEEN", 15),
-        ]
+    mapping = [
+        ("HALF OF AN HOUR", 0.5),
+        ("HALF", 0.5),
+        ("ONE AND A HALF", 1.5),
+        ("ONE", 1),
+        ("TWO AND A HALF", 2.5),
+        ("TWO", 2),
+        ("THREE AND A HALF", 3.5),
+        ("THREE", 3),
+        ("FOUR AND A HALF", 4.5),
+        ("FOUR", 4),
+        ("FIVE AND A HALF", 5.5),
+        ("FIVE", 5),
+        ("SIX AND A HALF", 6.5),
+        ("SIX", 6),
+        ("SEVEN AND A HALF", 7.5),
+        ("SEVEN", 7),
+        ("EIGHT AND A HALF", 8.5),
+        ("EIGHT", 8),
+        ("NINE AND A HALF", 9.5),
+        ("NINE", 9),
+        ("TEN AND A HALF", 10.5),
+        ("TEN", 10),
+        ("ELEVEN AND A HALF", 11.5),
+        ("ELEVEN", 11),
+        ("TWELVE AND A HALF", 12.5),
+        ("TWELVE", 12),
+        ("THIRTEEN AND A HALF", 13.5),
+        ("THIRTEEN", 13),
+        ("FOURTEEN AND A HALF", 14.5),
+        ("FOURTEEN", 14),
+        ("FIFTEEN", 15),
+        ("NONE", 0),
+    ]
 
-        for i, x in s.items():
-            if isinstance(x, str) and "HALF" in x:
-                out.at[i] = 0.5
+    for text, val in mapping:
+        mask = s.str.startswith(text, na=False) & out.isna()
+        out.loc[mask] = val
 
-        return out.fillna(0)
+    return out.fillna(0)
 
     # ---- APPLY HOURS CONVERSION ----
     df["Q70"] = convert_hours(df["Q70"])
