@@ -1281,6 +1281,23 @@ if uploaded_file is not None:
     st.write("Preview of uploaded file")
     st.dataframe(df.head())
 
+    st.write("Exercise debug")
+    st.dataframe(
+        df[[
+            "id",
+            "hrsrunning",
+            "runMETS",
+            "runkcal",
+            "weightlifthrs",
+            "weightliftMETS",
+            "weightliftkcal",
+            "ellipticalhrs",
+            "ellipticalMETS",
+            "ellipticalkcal",
+            "eee"
+        ]]
+    )
+    
     # ===============================
     # PROCESSING PIPELINE
     # ===============================
