@@ -455,7 +455,7 @@ def process_exercise(df):
         ]
 
         for i, x in s.items():
-            if "HALF" in x:
+            if isinstance(x, str) and "HALF" in x:
                 out.at[i] = 0.5
 
         return out.fillna(0)
