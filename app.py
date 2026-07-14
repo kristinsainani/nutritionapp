@@ -84,11 +84,11 @@ def process_servings(df):
     df = df.copy()
     
     vars_list = [
-        "Q10","Q11","Q12","Q149","Q146","Q1","Q150","Q24","Q165.1","Q23",
+        "Q10","Q11","Q12","Q149","Q146","Q1","Q150","Q24","Q165","Q23",
         "Q148","Q161","Q162","Q163","Q164","Q27","Q28","Q29","Q177",
         "Q178","Q33","Q169","Q170","Q168","Q171","Q35","Q261","Q262","Q263",
         "Q264","Q265","Q266","Q267","Q268","Q26","Q270","Q271","Q160",
-        "Q158.1","Q134","Q42","Q61","Q62","Q63","Q43","Q60","Q278","Q279",
+        "Q158=","Q134","Q42","Q61","Q62","Q63","Q43","Q60","Q278","Q279",
         "Q280","Q276","Q257","Q125","Q281","Q282","Q285","Q284","Q273","Q272",
         "Q52","Q269","Q289","Q290","Q291","Q292"
     ]
@@ -201,7 +201,7 @@ def create_food_variables(df):
     safe_assign("tomjuice", "Q150")
 
     safe_assign("plainbrd", "Q24")
-    safe_assign("bkdbrd", "Q165.1")
+    safe_assign("bkdbrd", "Q165")
     safe_assign("crpast", "Q23")
     safe_assign("grnsotr", "Q148")
 
@@ -236,7 +236,7 @@ def create_food_variables(df):
     safe_assign("hlfhlf", "Q271")
 
     safe_assign("olives", "Q160")
-    safe_assign("nuts", "Q158.1")
+    safe_assign("nuts", "Q158")
     safe_assign("avocado", "Q134")
 
     safe_assign("choccndy", "Q42")
@@ -1267,6 +1267,9 @@ if uploaded_file is not None:
     df = promote_second_duplicate(df, "Q160")
     df = promote_second_duplicate(df, "Q161")
     df = promote_second_duplicate(df, "Q162")
+    df = promote_second_duplicate(df, "Q165")
+    df = promote_second_duplicate(df, "Q158")
+
 
 # next line...
 
