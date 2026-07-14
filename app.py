@@ -646,6 +646,8 @@ def process_nutrients(df):
 
     # ---------------- RULE 2: <1 -> 0 ----------------
     for col in df.columns:
+        if col == "Q182":
+            continue
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
         df[col] = np.where(df[col] < 1, 0, df[col])
 
