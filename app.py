@@ -1283,6 +1283,10 @@ def create_allnutrition_dataset(df):
 
 if uploaded_file is not None:
     df = read_uploaded_file(uploaded_file)
+
+    st.write(df.columns.tolist())
+    st.stop()
+
     df = normalize_qualtrics_columns(df)
 
     # 👇 PREVIEW UPLOADED FILE
