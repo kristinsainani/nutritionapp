@@ -450,6 +450,7 @@ def process_exercise(df):
                     if x.startswith(word):
                         out.at[i] = val
                         break
+        out.loc[s == "HALF OF AN HOUR PER WEEK"] = 0.5
 
         return out.fillna(0)
 
