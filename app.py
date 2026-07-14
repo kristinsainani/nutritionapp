@@ -36,21 +36,6 @@ def ensure_columns(df, cols):
     return df
 
 def normalize_qualtrics_columns(df):
-    new_cols = []
-
-    for col in df.columns:
-        col = str(col)
-
-        m = re.match(r"^(.*)\.(\d+)$", col)
-        if m:
-            base = m.group(1)
-            num = int(m.group(2))
-            new_cols.append(f"{base}_{num:04d}")
-        else:
-            new_cols.append(col)
-
-    df = df.copy()
-    df.columns = new_cols
     return df
     
 def sas_index(value, substring):
