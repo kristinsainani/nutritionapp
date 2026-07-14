@@ -1233,7 +1233,7 @@ def process_nutrients(df):
 
 def create_redcap_dataset(df):
     df = df.copy()
-    df["id"] = df["Q182"]
+    df["id"] = df["Q182"].astype(str).str.strip()
     cols = [
     "id","age","gender","ismale","weightkg","heightm","bmi","ffm",
     "eee","ei","ei_kg","ea","lowea_clinical","lowea_subclinical",
