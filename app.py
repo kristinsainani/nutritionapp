@@ -367,6 +367,52 @@ def process_body_metrics(df):
 
     return df
 
+def process_exercise(df):
+    df = df.copy()
+
+    def num(col):
+        if col in df.columns:
+            return pd.to_numeric(df[col], errors="coerce").fillna(0)
+        else:
+            return pd.Series(0, index=df.index)
+
+    # ---- RUN PACE + METS ----
+    s = df["Q213"].astype(str)
+
+    df["runpace"] = np.nan
+    df["runMETS"] = np.nan
+
+    df.loc[s.str.contains("5:30", na=False), ["runpace", "runMETS"]] = [5.5, 16]
+    df.loc[s.str.contains("6:00", na=False), ["runpace", "runMETS"]] = [6.0, 14.5]
+    df.loc[s.str.contains("6:30", na=False), ["runpace", "runMETS"]] = [6.5, 12.8]
+    df.loc[s.str.contains("7:00", na=False), ["runpace", "runMETS"]] = [7.0, 12.3]
+    df.loc[s.str.contains("7:30", na=False), ["runpace", "runMETS"]] = [7.5, 11.8]
+    df.loc[s.str.contains("8:00", na=False), ["runpace", "runMETS"]] = [8.0, 11.8]
+    df.loc[s.str.contains("8:30", na=False), ["runpace", "runMETS"]] = [8.5, 11.0]
+    df.loc[s.str.contains("9:00", na=False), ["runpace", "runMETS"]] = [9.0, 10.5]
+
+    df["runpace"] = df["runpace"].fillna(8)
+    df["runMETS"] = df["runMETS"].fillna(11.8)
+
+    # ---- RUN HOURS (FROM MILES + PACE) ----
+    df["miles_wk"] = num("Q212")
+    df["hrsrunning"] = (df["miles_wk"] * df["runpace"]) / 60
+
+    # ---- INTENSITY → METS ----
+    def map_intensity(series, high, moderate, low, default):
+        s = series.astype(str)
+        out = pd.Series(np.nan, index=series.index)
+
+        out[s.str.contains("High", na=False)] = high
+        out[s.str.contains("Moderate", na=False)] = moderate
+        out[s.str.contains("Low", na=False)] = low
+
+        return out.fillna(default)
+
+    df["weightliftMETS"] = map_intensity(df["Q215"], 6, 5, 3.5, 5)
+    df["aquajogMETS"] = map_intensity(df["Q219"], 9.8, 6.8, 4.8, 6.8)
+    df["bikeMETS"] = map_intensity(df["Q224"], 10, 8, 6.8, 8)
+    df["ellipticalMETS"] = map_intensity(df["Q225"], 9, 7, 5, 7)
 
     # ---- HOURS TEXT → NUMERIC ----
     def convert_hours(series):
@@ -375,6 +421,7 @@ def process_body_metrics(df):
 
         mapping = [
             ("NONE", 0),
+            ("HALF OF", 0.5),
             ("HALF", 0.5),
             ("ONE AND A HALF", 1.5),
             ("ONE", 1),
@@ -413,23 +460,23 @@ def process_body_metrics(df):
         return out.fillna(0)
 
     # ---- APPLY HOURS CONVERSION ----
-    df["Q70"]  = convert_hours(df["Q70"])
+    df["Q70"] = convert_hours(df["Q70"])
     df["Q218"] = convert_hours(df["Q218"])
     df["Q221"] = convert_hours(df["Q221"])
     df["Q223"] = convert_hours(df["Q223"])
 
     df["weightlifthrs"] = df["Q70"]
-    df["aquajoghrs"]    = df["Q218"]
-    df["bikehrs"]       = df["Q221"]
+    df["aquajoghrs"] = df["Q218"]
+    df["bikehrs"] = df["Q221"]
     df["ellipticalhrs"] = df["Q223"]
 
     # ---- TOTAL HOURS ----
     df["total_ex_hrs"] = (
-        df["hrsrunning"] +
-        df["weightlifthrs"] +
-        df["aquajoghrs"] +
-        df["bikehrs"] +
-        df["ellipticalhrs"]
+        df["hrsrunning"]
+        + df["weightlifthrs"]
+        + df["aquajoghrs"]
+        + df["bikehrs"]
+        + df["ellipticalhrs"]
     )
 
     return df
