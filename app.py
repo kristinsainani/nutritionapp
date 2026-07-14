@@ -367,98 +367,50 @@ def process_body_metrics(df):
 
     return df
 
-def process_exercise(df):
-    df = df.copy()
 
-    def num(col):
-        if col in df.columns:
-            return pd.to_numeric(df[col], errors="coerce").fillna(0)
-        else:
-            return pd.Series(0, index=df.index)
-
-    # ---- RUN PACE + METS ----
-    s = df["Q213"].astype(str)
-
-    df["runpace"] = np.nan
-    df["runMETS"] = np.nan
-
-    df.loc[s.str.contains("5:30", na=False), ["runpace","runMETS"]] = [5.5, 16]
-    df.loc[s.str.contains("6:00", na=False), ["runpace","runMETS"]] = [6.0, 14.5]
-    df.loc[s.str.contains("6:30", na=False), ["runpace","runMETS"]] = [6.5, 12.8]
-    df.loc[s.str.contains("7:00", na=False), ["runpace","runMETS"]] = [7.0, 12.3]
-    df.loc[s.str.contains("7:30", na=False), ["runpace","runMETS"]] = [7.5, 11.8]
-    df.loc[s.str.contains("8:00", na=False), ["runpace","runMETS"]] = [8.0, 11.8]
-    df.loc[s.str.contains("8:30", na=False), ["runpace","runMETS"]] = [8.5, 11.0]
-    df.loc[s.str.contains("9:00", na=False), ["runpace","runMETS"]] = [9.0, 10.5]
-
-    # SAS defaults
-    df["runpace"] = df["runpace"].fillna(8)
-    df["runMETS"] = df["runMETS"].fillna(11.8)
-
-    # ---- RUN HOURS (FROM MILES + PACE) ----
-    df["miles_wk"] = num("Q212")
-    df["hrsrunning"] = (df["miles_wk"] * df["runpace"]) / 60
-
-
-    # ---- INTENSITY → METS ----
-    def map_intensity(series, high, moderate, low, default):
-        s = series.astype(str)
+    # ---- HOURS TEXT → NUMERIC ----
+    def convert_hours(series):
+        s = series.astype(str).str.upper().str.strip()
         out = pd.Series(np.nan, index=series.index)
 
-        out[s.str.contains("High", na=False)] = high
-        out[s.str.contains("Moderate", na=False)] = moderate
-        out[s.str.contains("Low", na=False)] = low
+        mapping = [
+            ("NONE", 0),
+            ("HALF", 0.5),
+            ("ONE AND A HALF", 1.5),
+            ("ONE", 1),
+            ("TWO AND A HALF", 2.5),
+            ("TWO", 2),
+            ("THREE AND A HALF", 3.5),
+            ("THREE", 3),
+            ("FOUR AND A HALF", 4.5),
+            ("FOUR", 4),
+            ("FIVE AND A HALF", 5.5),
+            ("FIVE", 5),
+            ("SIX AND A HALF", 6.5),
+            ("SIX", 6),
+            ("SEVEN AND A HALF", 7.5),
+            ("SEVEN", 7),
+            ("EIGHT AND A HALF", 8.5),
+            ("EIGHT", 8),
+            ("NINE AND A HALF", 9.5),
+            ("NINE", 9),
+            ("TEN AND A HALF", 10.5),
+            ("TEN", 10),
+            ("ELEVEN AND A HALF", 11.5),
+            ("ELEVEN", 11),
+            ("TWELVE AND A HALF", 12.5),
+            ("TWELVE", 12),
+            ("THIRTEEN AND A HALF", 13.5),
+            ("THIRTEEN", 13),
+            ("FOURTEEN AND A HALF", 14.5),
+            ("FOURTEEN", 14),
+            ("FIFTEEN", 15),
+        ]
 
-        return out.fillna(default)
+        for text, val in mapping:
+            out.loc[s.str.startswith(text, na=False)] = val
 
-    df["weightliftMETS"] = map_intensity(df["Q215"], 6, 5, 3.5, 5)
-    df["aquajogMETS"]    = map_intensity(df["Q219"], 9.8, 6.8, 4.8, 6.8)
-    df["bikeMETS"]       = map_intensity(df["Q224"], 10, 8, 6.8, 8)
-    df["ellipticalMETS"] = map_intensity(df["Q225"], 9, 7, 5, 7)
-
-# ---- HOURS TEXT → NUMERIC ----
-def convert_hours(series):
-    s = series.astype(str).str.upper().str.strip()
-    out = pd.Series(np.nan, index=series.index)
-
-    mapping = [
-        ("NONE", 0),
-        ("HALF", 0.5),
-        ("ONE AND A HALF", 1.5),
-        ("ONE", 1),
-        ("TWO AND A HALF", 2.5),
-        ("TWO", 2),
-        ("THREE AND A HALF", 3.5),
-        ("THREE", 3),
-        ("FOUR AND A HALF", 4.5),
-        ("FOUR", 4),
-        ("FIVE AND A HALF", 5.5),
-        ("FIVE", 5),
-        ("SIX AND A HALF", 6.5),
-        ("SIX", 6),
-        ("SEVEN AND A HALF", 7.5),
-        ("SEVEN", 7),
-        ("EIGHT AND A HALF", 8.5),
-        ("EIGHT", 8),
-        ("NINE AND A HALF", 9.5),
-        ("NINE", 9),
-        ("TEN AND A HALF", 10.5),
-        ("TEN", 10),
-        ("ELEVEN AND A HALF", 11.5),
-        ("ELEVEN", 11),
-        ("TWELVE AND A HALF", 12.5),
-        ("TWELVE", 12),
-        ("THIRTEEN AND A HALF", 13.5),
-        ("THIRTEEN", 13),
-        ("FOURTEEN AND A HALF", 14.5),
-        ("FOURTEEN", 14),
-        ("FIFTEEN", 15),
-    ]
-
-    for text, val in mapping:
-        out.loc[s.str.startswith(text, na=False)] = val
-
-    return out.fillna(0)
+        return out.fillna(0)
 
     # ---- APPLY HOURS CONVERSION ----
     df["Q70"]  = convert_hours(df["Q70"])
@@ -471,8 +423,7 @@ def convert_hours(series):
     df["bikehrs"]       = df["Q221"]
     df["ellipticalhrs"] = df["Q223"]
 
-
-    # ---- TOTAL HOURS (optional helper) ----
+    # ---- TOTAL HOURS ----
     df["total_ex_hrs"] = (
         df["hrsrunning"] +
         df["weightlifthrs"] +
