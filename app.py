@@ -443,7 +443,7 @@ def process_exercise(df):
                     if x.startswith(word):
                         out.at[i] = val + 0.5
                         break
-            elif x.startswith("HALF"):
+            elif "HALF OF AN HOUR" in x and "AND A HALF" not in x:
                 out.at[i] = 0.5
             else:
                 for word, val in whole:
