@@ -436,6 +436,7 @@ def process_exercise(df):
         ]
 
         for i, x in s.items():
+            if x == "HALF OF AN HOUR PER WEEK": out.at[i] = 0.5
             if x.startswith("NONE"):
                 out.at[i] = 0
             elif "AND A HALF" in x:
