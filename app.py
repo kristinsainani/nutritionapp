@@ -416,45 +416,47 @@ def process_exercise(df):
     df["bikeMETS"]       = map_intensity(df["Q224"], 10, 8, 6.8, 8)
     df["ellipticalMETS"] = map_intensity(df["Q225"], 9, 7, 5, 7)
 
-
-    # ---- HOURS TEXT → NUMERIC ----
+# ---- HOURS TEXT → NUMERIC ----
 def convert_hours(series):
     s = series.astype(str).str.upper().str.strip()
-    out = pd.Series(np.nan, index=series.index, dtype=float)
+    out = pd.Series(np.nan, index=series.index)
 
-    whole = [
-        ("FIFTEEN", 15),
-        ("FOURTEEN", 14),
-        ("THIRTEEN", 13),
-        ("TWELVE", 12),
-        ("ELEVEN", 11),
-        ("TEN", 10),
-        ("NINE", 9),
-        ("EIGHT", 8),
-        ("SEVEN", 7),
-        ("SIX", 6),
-        ("FIVE", 5),
-        ("FOUR", 4),
-        ("THREE", 3),
-        ("TWO", 2),
+    mapping = [
+        ("NONE", 0),
+        ("HALF", 0.5),
+        ("ONE AND A HALF", 1.5),
         ("ONE", 1),
+        ("TWO AND A HALF", 2.5),
+        ("TWO", 2),
+        ("THREE AND A HALF", 3.5),
+        ("THREE", 3),
+        ("FOUR AND A HALF", 4.5),
+        ("FOUR", 4),
+        ("FIVE AND A HALF", 5.5),
+        ("FIVE", 5),
+        ("SIX AND A HALF", 6.5),
+        ("SIX", 6),
+        ("SEVEN AND A HALF", 7.5),
+        ("SEVEN", 7),
+        ("EIGHT AND A HALF", 8.5),
+        ("EIGHT", 8),
+        ("NINE AND A HALF", 9.5),
+        ("NINE", 9),
+        ("TEN AND A HALF", 10.5),
+        ("TEN", 10),
+        ("ELEVEN AND A HALF", 11.5),
+        ("ELEVEN", 11),
+        ("TWELVE AND A HALF", 12.5),
+        ("TWELVE", 12),
+        ("THIRTEEN AND A HALF", 13.5),
+        ("THIRTEEN", 13),
+        ("FOURTEEN AND A HALF", 14.5),
+        ("FOURTEEN", 14),
+        ("FIFTEEN", 15),
     ]
 
-    for i, x in s.items():
-        if x.startswith("NONE"):
-            out.at[i] = 0
-        elif x.startswith("HALF"):
-            out.at[i] = 0.5
-        elif "AND A HALF" in x:
-            for word, num in whole:
-                if x.startswith(word):
-                    out.at[i] = num + 0.5
-                    break
-        else:
-            for word, num in whole:
-                if x.startswith(word + " HOUR") or x.startswith(word + " HOURS") or x.startswith(word):
-                    out.at[i] = num
-                    break
+    for text, val in mapping:
+        out.loc[s.str.startswith(text, na=False)] = val
 
     return out.fillna(0)
 
