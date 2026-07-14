@@ -22,6 +22,15 @@ def read_uploaded_file(file):
     else:
         raise ValueError("Unsupported file type. Please upload a CSV, XLSX, or XLS file.")
 
+def promote_second_duplicate(df, q):
+    matches = [c for c in df.columns if c == q or c.startswith(q + ".")]
+
+    if len(matches) >= 2:
+        df = df.copy()
+        df.rename(columns={matches[0]: q + "A", matches[1]: q}, inplace=True)
+
+    return df
+
 
 def clean_missing_strings(df):
     df = df.copy()
@@ -1258,6 +1267,13 @@ def create_allnutrition_dataset(df):
 
 if uploaded_file is not None:
     df = read_uploaded_file(uploaded_file)
+
+
+    df = promote_second_duplicate(df, "Q160")
+    df = promote_second_duplicate(df, "Q161")
+    df = promote_second_duplicate(df, "Q162")
+
+# next line...
 
     # 👇 PREVIEW UPLOADED FILE
     st.write("Preview of uploaded file")
