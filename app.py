@@ -76,9 +76,9 @@ def process_servings(df):
     
     vars_list = [
         "Q10","Q11","Q12","Q149","Q146","Q1","Q150","Q24","Q165.1","Q23",
-        "Q148","Q161.1","Q162.1","Q163","Q164","Q27","Q28","Q29","Q177",
+        "Q148","Q161","Q162","Q163","Q164","Q27","Q28","Q29","Q177",
         "Q178","Q33","Q169","Q170","Q168","Q171","Q35","Q261","Q262","Q263",
-        "Q264","Q265","Q266","Q267","Q268","Q26","Q270","Q271","Q160.1",
+        "Q264","Q265","Q266","Q267","Q268","Q26","Q270","Q271","Q160",
         "Q158.1","Q134","Q42","Q61","Q62","Q63","Q43","Q60","Q278","Q279",
         "Q280","Q276","Q257","Q125","Q281","Q282","Q285","Q284","Q273","Q272",
         "Q52","Q269","Q289","Q290","Q291","Q292"
@@ -196,8 +196,8 @@ def create_food_variables(df):
     safe_assign("crpast", "Q23")
     safe_assign("grnsotr", "Q148")
 
-    df["legumes"] = df["Q161.1"]
-    df["corn"] = df["Q162.1"]
+    safe_assign("corn", "Q162")
+    safe_assign("legumes", "Q161")
     safe_assign("potatonf", "Q163")
     safe_assign("potatofr", "Q164")
 
@@ -226,7 +226,7 @@ def create_food_variables(df):
     safe_assign("mrgrne", "Q270")
     safe_assign("hlfhlf", "Q271")
 
-    df["olives"] = df["Q160.1"]
+    safe_assign("olives", "Q160")
     safe_assign("nuts", "Q158.1")
     safe_assign("avocado", "Q134")
 
