@@ -206,8 +206,8 @@ def create_food_variables(df):
     safe_assign("crpast", "Q23")
     safe_assign("grnsotr", "Q148")
 
-    safe_assign("legumes", "Q161.1")
-    safe_assign("corn", "Q162.1")
+    df["legumes"] = df["Q161.1"]
+    df["corn"] = df["Q162.1"]
     safe_assign("potatonf", "Q163")
     safe_assign("potatofr", "Q164")
 
@@ -236,7 +236,7 @@ def create_food_variables(df):
     safe_assign("mrgrne", "Q270")
     safe_assign("hlfhlf", "Q271")
 
-    safe_assign("olives", "Q160.1")
+    df["olives"] = df["Q160.1"]
     safe_assign("nuts", "Q158.1")
     safe_assign("avocado", "Q134")
 
