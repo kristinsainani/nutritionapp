@@ -11,16 +11,36 @@ uploaded_file = st.file_uploader("Upload Qualtrics export", type=["csv", "xlsx",
 
 
 def read_uploaded_file(file):
+
     if file.name.lower().endswith(".csv"):
         try:
-            return pd.read_csv(file, skiprows=[1], dtype=str)
+            raw = pd.read_csv(file, header=None, dtype=str)
         except Exception:
             file.seek(0)
-            return pd.read_csv(file, skiprows=[1], encoding="latin1", dtype=str)
-    elif file.name.lower().endswith(".xlsx") or file.name.lower().endswith(".xls"):
-        return pd.read_excel(file, skiprows=[1], dtype=str)
+            raw = pd.read_csv(file, header=None, encoding="latin1", dtype=str)
+
+    elif file.name.lower().endswith((".xlsx", ".xls")):
+        raw = pd.read_excel(file, header=None, dtype=str)
+
     else:
-        raise ValueError("Unsupported file type. Please upload a CSV, XLSX, or XLS file.")
+        raise ValueError("Unsupported file type.")
+
+    # First row = Qualtrics variable names
+    column_names = raw.iloc[0].tolist()
+
+    # Second row = Qualtrics question text
+    question_text = raw.iloc[1].tolist()
+
+    # Actual data starts on row 3
+    df = raw.iloc[2:].reset_index(drop=True)
+
+    # Use the Qualtrics variable names as the dataframe columns
+    df.columns = column_names
+
+    # Save the question text so we can use it later
+    df.attrs["question_text"] = question_text
+
+    return df
 
 
 def clean_missing_strings(df):
