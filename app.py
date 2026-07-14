@@ -170,14 +170,6 @@ def create_food_variables(df):
     def safe_assign(new_col, old_col):
         candidates = [old_col]
 
-        if old_col.endswith("_0001"):
-            base = old_col[:-5]
-            candidates.extend([f"{base}.1", f"{base}_1", base])
-
-        elif old_col.endswith("_0002"):
-            base = old_col[:-5]
-            candidates.extend([f"{base}.2", f"{base}_2", base])
-
         for c in candidates:
             c = str(c).strip()
             if c in df.columns:
