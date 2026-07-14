@@ -185,10 +185,18 @@ def create_food_variables(df):
     df = df.copy()
 
     def safe_assign(new_col, old_col):
-        if old_col in df.columns:
-            df[new_col] = df[old_col]
-        else:
-            df[new_col] = 0
+        candidates = [old_col]
+
+        if old_col.endswith("_0001"):
+            base = old_col[:-5]
+            candidates.extend([f"{base}.1", base])
+
+        for c in candidates:
+            if c in df.columns:
+                df[new_col] = df[c]
+                return
+
+        df[new_col] = 0
 
     # ===============================
     # FOOD VARIABLE ASSIGNMENT (SAS MATCHED)
