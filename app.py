@@ -36,20 +36,23 @@ def ensure_columns(df, cols):
     return df
 
 def normalize_qualtrics_columns(df):
-    counts = {}
     new_cols = []
 
     for col in df.columns:
-        if col not in counts:
-            counts[col] = 0
-            new_cols.append(col)
-        else:
-            counts[col] += 1
-            new_cols.append(f"{col}_{counts[col]:04d}")
+        col = str(col)
 
+        m = re.match(r"^(.*)\.(\d+)$", col)
+        if m:
+            base = m.group(1)
+            num = int(m.group(2))
+            new_cols.append(f"{base}_{num:04d}")
+        else:
+            new_cols.append(col)
+
+    df = df.copy()
     df.columns = new_cols
     return df
-
+    
 def sas_index(value, substring):
     if pd.isna(value):
         return 0
@@ -205,7 +208,7 @@ def create_food_variables(df):
     safe_assign("crpast", "Q23")
     safe_assign("grnsotr", "Q148")
 
-    safe_assign("legumess", "Q161_0001")
+    safe_assign("legumes", "Q161_0001")
     safe_assign("corn", "Q162_0001")
     safe_assign("potatonf", "Q163")
     safe_assign("potatofr", "Q164")
@@ -674,11 +677,11 @@ def process_nutrients(df):
     df["grains"] = num("plainbrd") + num("bkdbrd") + num("crpast") + num("grnsotr")
 
     # ---------------- LEGUMES ----------------
-    df["legumeskcal"] = num("legumess")*100/7
-    df["legumescho"] = num("legumess")*15/7
-    df["legumespro"] = num("legumess")*6/7
-    df["legumesfiber"] = num("legumess")*5/7
-    df["legumes"] = num("legumess")*0.14/2
+    df["legumeskcal"] = num("legumes")*100/7
+    df["legumescho"] = num("legumes")*15/7
+    df["legumespro"] = num("legumes")*6/7
+    df["legumesfiber"] = num("legumes")*5/7
+    df["legumes"] = num("legumes")*0.14/2
 
     # ---------------- CORN ----------------
     df["cornkcal"] = num("corn")*80/7
@@ -700,7 +703,7 @@ def process_nutrients(df):
     df["vegspro"] = df["legumespro"] + df["cornpro"] + df["potatopro"]
     df["vegsfat"] = df["potatofat"]
     df["vegsfiber"] = df["legumesfiber"] + df["cornfiber"] + df["potatofiber"]
-    df["starchveg"] = (num("legumess") + num("corn") + num("potatonf") + num("potatofr"))*0.14/2
+    df["starchveg"] = (num("legumes") + num("corn") + num("potatonf") + num("potatofr"))*0.14/2
     df["vegall"] = df["nsveg"] + df["starchveg"]
 
     # ---------------- MEAT/FISH/EGGS ----------------
