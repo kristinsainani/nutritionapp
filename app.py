@@ -455,7 +455,8 @@ def process_exercise(df):
         ]
 
         for text, val in mapping:
-            out.loc[s.str.startswith(text, na=False)] = val
+            mask = s.str.startswith(text, na=False) & out.isna()
+            out.loc[mask] = val
 
         return out.fillna(0)
 
