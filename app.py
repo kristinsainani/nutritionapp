@@ -184,24 +184,24 @@ def process_servings(df):
 def create_food_variables(df):
     df = df.copy()
 
-def safe_assign(new_col, old_col):
-    candidates = [old_col]
+    def safe_assign(new_col, old_col):
+        candidates = [old_col]
 
-    if old_col.endswith("_0001"):
-        base = old_col[:-5]
-        candidates.extend([f"{base}.1", f"{base}_1", base])
+        if old_col.endswith("_0001"):
+            base = old_col[:-5]
+            candidates.extend([f"{base}.1", f"{base}_1", base])
 
-    elif old_col.endswith("_0002"):
-        base = old_col[:-5]
-        candidates.extend([f"{base}.2", f"{base}_2", base])
+        elif old_col.endswith("_0002"):
+            base = old_col[:-5]
+            candidates.extend([f"{base}.2", f"{base}_2", base])
 
-    for c in candidates:
-        c = str(c).strip()
-        if c in df.columns:
-            df[new_col] = df[c]
-            return
+        for c in candidates:
+            c = str(c).strip()
+            if c in df.columns:
+                df[new_col] = df[c]
+                return
 
-    df[new_col] = 0
+        df[new_col] = 0
 
     # ===============================
     # FOOD VARIABLE ASSIGNMENT (SAS MATCHED)
