@@ -454,9 +454,9 @@ def process_exercise(df):
             ("FIFTEEN", 15),
         ]
 
-        for text, val in mapping:
-            mask = s.str.startswith(text, na=False) & out.isna()
-            out.loc[mask] = val
+        for i, x in s.items():
+            if "HALF" in x:
+                out.at[i] = 0.5
 
         return out.fillna(0)
 
