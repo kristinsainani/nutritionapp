@@ -421,8 +421,7 @@ def process_exercise(df):
 
         mapping = [
             ("NONE", 0),
-            ("HALF OF", 0.5),
-            ("HALF OF AN HOUR", 0.5)
+            ("HALF OF AN HOUR", 0.5),
             ("HALF", 0.5),
             ("ONE AND A HALF", 1.5),
             ("ONE", 1),
