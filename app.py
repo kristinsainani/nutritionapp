@@ -456,7 +456,7 @@ def convert_hours(series):
                     out.at[i] = num
                     break
 
-        return out.fillna(0)
+    return out.fillna(0)
 
     # ---- APPLY HOURS CONVERSION ----
     df["Q70"]  = convert_hours(df["Q70"])
