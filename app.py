@@ -1237,7 +1237,7 @@ def create_redcap_dataset(df):
     df = df.copy()
     df["id"] = df["Q182"].astype(str).str.strip()
     cols = [
-    "id","age","gender","ismale","weightkg","heightm","bmi","ffm",
+    "id","age","ismale","weightkg","heightm","bmi","ffm",
     "eee","ei","ei_kg","ea","lowea_clinical","lowea_subclinical",
     "miles_wk","fruit","nsveg","starchveg","vegall","legumes","grains",
     "profoods","mtpltry","fttyfish","eggs","dairy","fluids",
