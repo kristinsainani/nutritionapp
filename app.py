@@ -35,8 +35,6 @@ def ensure_columns(df, cols):
             df[col] = ""
     return df
 
-def normalize_qualtrics_columns(df):
-    return df
     
 def sas_index(value, substring):
     if pd.isna(value):
