@@ -418,46 +418,43 @@ def process_exercise(df):
 
 
     # ---- HOURS TEXT → NUMERIC ----
-    def convert_hours(series):
-        s = series.astype(str).str.upper().str.strip()
-        out = pd.Series(np.nan, index=series.index)
+def convert_hours(series):
+    s = series.astype(str).str.upper().str.strip()
+    out = pd.Series(np.nan, index=series.index, dtype=float)
 
-        mapping = [
-            ("NONE", 0),
-            ("HALF", 0.5),
-            ("ONE HOUR", 1),
-            ("ONE AND A HALF", 1.5),
-            ("TWO AND A HALF", 2.5),
-            ("TWO", 2),
-            ("THREE AND A HALF", 3.5),
-            ("THREE HOURS", 3),
-            ("FOUR AND A HALF", 4.5),
-            ("FOUR HOURS", 4),
-            ("FIVE AND A HALF", 5.5),
-            ("FIVE HOURS", 5),
-            ("SIX AND A HALF", 6.5),
-            ("SIX HOURS", 6),
-            ("SEVEN AND A HALF", 7.5),
-            ("SEVEN HOURS", 7),
-            ("EIGHT AND A HALF", 8.5),
-            ("EIGHT HOURS", 8),
-            ("NINE AND A HALF", 9.5),
-            ("NINE HOURS", 9),
-            ("TEN AND A HALF", 10.5),
-            ("TEN HOURS", 10),
-            ("ELEVEN AND A HALF", 11.5),
-            ("ELEVEN HOURS", 11),
-            ("TWELVE AND A HALF", 12.5),
-            ("TWELVE HOURS", 12),
-            ("THIRTEEN AND A HALF", 13.5),
-            ("THIRTEEN HOURS", 13),
-            ("FOURTEEN AND A HALF", 14.5),
-            ("FOURTEEN HOURS", 14),
-            ("FIFTEEN HOURS", 15)
-        ]
+    whole = [
+        ("FIFTEEN", 15),
+        ("FOURTEEN", 14),
+        ("THIRTEEN", 13),
+        ("TWELVE", 12),
+        ("ELEVEN", 11),
+        ("TEN", 10),
+        ("NINE", 9),
+        ("EIGHT", 8),
+        ("SEVEN", 7),
+        ("SIX", 6),
+        ("FIVE", 5),
+        ("FOUR", 4),
+        ("THREE", 3),
+        ("TWO", 2),
+        ("ONE", 1),
+    ]
 
-        for text, val in mapping:
-            out[s.str.startswith(text, na=False)] = val
+    for i, x in s.items():
+        if x.startswith("NONE"):
+            out.at[i] = 0
+        elif x.startswith("HALF"):
+            out.at[i] = 0.5
+        elif "AND A HALF" in x:
+            for word, num in whole:
+                if x.startswith(word):
+                    out.at[i] = num + 0.5
+                    break
+        else:
+            for word, num in whole:
+                if x.startswith(word + " HOUR") or x.startswith(word + " HOURS") or x.startswith(word):
+                    out.at[i] = num
+                    break
 
         return out.fillna(0)
 
