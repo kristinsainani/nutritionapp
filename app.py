@@ -1298,6 +1298,37 @@ if uploaded_file is not None:
     # OUTPUT DATASETS
     # ===============================
     df_redcap = create_redcap_dataset(df)
+
+
+    st.write("Exercise variables")
+
+    st.dataframe(
+        df[
+            [
+                "id",
+                "miles_wk",
+                "runpace",
+                "runMETS",
+                "hrsrunning",
+                "runkcal",
+                "weightlifthrs",
+                "weightliftMETS",
+                "weightliftkcal",
+                "aquajoghrs",
+                "aquajogMETS",
+                "aquajogkcal",
+                "bikehrs",
+                "bikeMETS",
+                "bikekcal",
+                "ellipticalhrs",
+                "ellipticalMETS",
+                "ellipticalkcal",
+                "eee"
+            ]
+        ]
+    )
+
+    
     df_all = create_allnutrition_dataset(df)
 
     # 👇 PREVIEW FINAL REDCAP DATA
