@@ -1296,6 +1296,7 @@ if uploaded_file is not None:
     df_all = create_allnutrition_dataset(df)
 
     
+    
     # 👇 PREVIEW FINAL REDCAP DATA
     st.write("REDCap dataset (final output)")
     st.dataframe(df_redcap.head())
@@ -1314,4 +1315,10 @@ if uploaded_file is not None:
         "Download full dataset (allnutrition)",
         df_all.to_csv(index=False),
         "allnutrition.csv"
+    )
+
+    st.download_button(
+        "Download debug dataset",
+        df.to_csv(index=False),
+        "debug.csv"
     )
