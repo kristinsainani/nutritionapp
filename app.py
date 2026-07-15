@@ -1317,8 +1317,4 @@ if uploaded_file is not None:
         "allnutrition.csv"
     )
 
-    st.download_button(
-        "Download debug dataset",
-        df.to_csv(index=False),
-        "debug.csv"
-    )
+
