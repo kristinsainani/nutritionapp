@@ -1295,9 +1295,6 @@ if uploaded_file is not None:
     df_redcap = create_redcap_dataset(df)
     df_all = create_allnutrition_dataset(df)
 
-    st.dataframe(
-        df.loc[df["Q182"] == "Far01", exercise_cols]
-    )
     
     # 👇 PREVIEW FINAL REDCAP DATA
     st.write("REDCap dataset (final output)")
